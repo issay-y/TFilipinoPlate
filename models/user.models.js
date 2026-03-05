@@ -1,0 +1,10 @@
+import mongoose from "mongoose";
+
+const User = mongoose.model("User", new mongoose.Schema({
+        username: { type: String, unique: true, required: true},
+        email: { type: String, unique: true, required: true },
+        password: { type: String, required: true }, //HASH THE PASSWORD BEFORE SAVING
+        allergens: [String],
+        created_at: { type: Date, default: Date.now }
+    }));
+export { User };
