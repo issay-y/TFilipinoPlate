@@ -6,7 +6,7 @@ const router = express.Router();
 
 
 
-// Add a cooking history entry for the logged-in user.
+// Add cooking history entry for the logged-in user.
 router.post("/", verifyToken, async (req, res) => {
     try {
         const { recipe_id, recipe_name, cooking_method, cooked_at } = req.body;
