@@ -17,7 +17,7 @@ import dotenv from "dotenv";
 
 // Press Ctrl + C to stop the server.
 // Run `node server.js` to start the server.
-
+//to cache something in git: git rm --cached "the file name"
 // Load values from the .env file.
 dotenv.config();
 

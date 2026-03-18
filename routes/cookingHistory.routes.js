@@ -44,4 +44,9 @@ router.get("/", verifyToken, async (req, res) => {
     }
 });
 
+    //diversity: access history of viewed/bookmarked recipes, also cooked
+    //keep track of type of cooking method or type of dish
+    //then; use that to generate AI-based recipe suggestions that fit the user's preferences and history.
+    //
+
 export default router;
