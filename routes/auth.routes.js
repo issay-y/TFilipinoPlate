@@ -2,6 +2,7 @@ import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { User } from "../models/user.models.js";
+import { verifyToken } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
@@ -90,33 +91,16 @@ router.post("/login", (req, res) => {
 });
 
 // Get the current logged-in user.
-router.get("/me", (req, res) => {
-  // TODO: Replace this manual token check with shared auth middleware.
+router.get("/me", verifyToken, (req, res) => {
+  const user = {
+    _id: req.user._id,
+    username: req.user.username,
+    email: req.user.email,
+    role: req.user.role,
+    status: req.user.status,
+    allergens: req.user.allergens || []
+  };
 
-  // Read the token from the Authorization header.
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Authorization header missing or malformed" });
-    }
-    const token = authHeader.split(" ")[1];
-
-    // Verify that the token is valid.
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-      if (err) {
-        console.error("Error verifying token:", err);
-        return res.status(401).json({ message: "Invalid or expired token" });
-      }
-
-      // Use the token data to find the user record.
-      User.findById(decoded.userId).select("-password").then((user) => {
-        if (!user) {
-          return res.status(404).json({ message: "User not found" });
-        }
-        res.json({ user }); // Return user data without the password.
-      }).catch((err) => {
-        console.error("error finding user:", err);
-        res.status(500).json({ message: "Error finding user" });
-      });
-    });
-  }); 
+  return res.json({ user });
+});
 export default router;

@@ -1,5 +1,6 @@
 import express from "express";
 import axios from "axios";
+import { Recipe } from "../models/recipe.models.js";
 
 const router = express.Router();
 
@@ -22,6 +23,35 @@ function clampNumber(value, min, max, fallback) {
 function isFilipinoQuery(query) {
 	const lowerQuery = String(query || "").toLowerCase();
 	return lowerQuery.includes("filipino") || lowerQuery.includes("philippine") || lowerQuery.includes("tagalog") || !query;
+}
+
+function mapInternalRecipe(item) {
+	return {
+		id: String(item._id),
+		title: item.title,
+		description: item.description || "Recipe shared by an admin",
+		ingredients: item.ingredients || [],
+		instructions: item.instructions || "",
+		image: item.image || null,
+		link: null,
+		source: "admin"
+	};
+}
+
+async function fetchInternalRecipes(query = "") {
+	const q = String(query || "").trim();
+	const filter = { is_published: true };
+
+	if (q) {
+		filter.$or = [
+			{ title: { $regex: q, $options: "i" } },
+			{ description: { $regex: q, $options: "i" } },
+			{ cooking_method: { $regex: q, $options: "i" } }
+		];
+	}
+
+	const recipes = await Recipe.find(filter).sort({ created_at: -1 }).lean();
+	return recipes.map(mapInternalRecipe);
 }
 
 async function fetchFromPanlasangPinoy(searchTerm, page = 1, perPage = 20) {
@@ -189,14 +219,16 @@ router.get("/", async (req, res) => {
 		let recipes;
 		let totalResults;
 		let displayQuery;
+		let externalRecipes = [];
+		const internalRecipes = await fetchInternalRecipes(q);
 
 		if (isFilipinoSearch) {
 			// Use cached Filipino recipes if the cache is still fresh.
 			const now = Date.now();
 			if (filipinoRecipeCache && (now - cacheTimestamp) < CACHE_DURATION) {
 				// Return recipes from cache.
-				recipes = filipinoRecipeCache.slice((page - 1) * num, page * num);
-				totalResults = filipinoRecipeCache.length;
+				externalRecipes = filipinoRecipeCache;
+				totalResults = filipinoRecipeCache.length + internalRecipes.length;
 				displayQuery = "Filipino recipes (cached - Panlasang Pinoy)";
 			} else {
 				// Fetch fresh Filipino recipes from Panlasang Pinoy.
@@ -204,23 +236,26 @@ router.get("/", async (req, res) => {
 				filipinoRecipeCache = freshRecipes;
 				cacheTimestamp = now;
 				
-				recipes = freshRecipes.slice((page - 1) * num, page * num);
-				totalResults = freshRecipes.length;
+				externalRecipes = freshRecipes;
+				totalResults = freshRecipes.length + internalRecipes.length;
 				displayQuery = "Filipino recipes (Panlasang Pinoy)";
 			}
 		} else {
 			// Run a direct search on Panlasang Pinoy.
 			const results = await fetchFromPanlasangPinoy(q, page, num);
-			recipes = await Promise.all(
+			externalRecipes = await Promise.all(
 				results.map(async (recipe) => {
 					const imageUrl = await fetchFeaturedImage(recipe.featured_media);
 					const recipeData = extractIngredientsAndInstructions(recipe.content?.rendered || recipe.content || "");
 					return mapPanlasangPinoyRecipe(recipe, imageUrl, recipeData);
 				})
 			);
-			totalResults = results.length > 0 ? recipes.length : 0;
+			totalResults = externalRecipes.length + internalRecipes.length;
 			displayQuery = q;
 		}
+
+		const mergedRecipes = [...internalRecipes, ...externalRecipes];
+		recipes = mergedRecipes.slice((page - 1) * num, page * num);
 
 		return res.json({
 			query: displayQuery,

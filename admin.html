@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Filipino Plate Admin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-body">
+    <main class="admin-shell">
+        <header class="admin-header">
+            <h1>The Filipino Plate Admin Dashboard</h1>
+            <p>Manage recipes, users, and audit logs.</p>
+        </header>
+
+        <section id="admin-auth" class="panel">
+            <h2>Admin Login</h2>
+            <form id="admin-login-form" class="form-grid">
+                <label>Email
+                    <input type="email" id="admin-email" required>
+                </label>
+                <label>Password
+                    <input type="password" id="admin-password" required>
+                </label>
+                <button type="submit">Login as Admin</button>
+            </form>
+            <p id="admin-auth-message" class="status-message"></p>
+        </section>
+
+        <section id="admin-dashboard" class="panel hidden">
+            <div class="toolbar">
+                <span id="admin-welcome"></span>
+                <button id="admin-logout" type="button">Logout</button>
+            </div>
+
+            <div class="grid-2">
+                <section class="panel-inner">
+                    <h2>Create Recipe</h2>
+                    <form id="recipe-form" class="form-grid">
+                        <label>Title
+                            <input type="text" id="recipe-title" required>
+                        </label>
+                        <label>Description
+                            <textarea id="recipe-description" rows="3"></textarea>
+                        </label>
+                        <label>Ingredients (comma separated)
+                            <textarea id="recipe-ingredients" rows="3"></textarea>
+                        </label>
+                        <label>Instructions
+                            <textarea id="recipe-instructions" rows="4"></textarea>
+                        </label>
+                        <label>Image URL
+                            <input type="url" id="recipe-image">
+                        </label>
+                        <label>Cooking Method
+                            <input type="text" id="recipe-method">
+                        </label>
+                        <label class="inline-check">
+                            <input type="checkbox" id="recipe-published" checked>
+                            Publish recipe
+                        </label>
+                        <button type="submit" id="recipe-submit-btn">Create Recipe</button>
+                        <button type="button" id="recipe-cancel-edit" class="hidden">Cancel Edit</button>
+                    </form>
+                    <p id="recipe-form-message" class="status-message"></p>
+                </section>
+
+                <section class="panel-inner">
+                    <h2>Recipes</h2>
+                    <button id="refresh-recipes" type="button">Refresh Recipes</button>
+                    <div id="admin-recipes-list" class="list"></div>
+                </section>
+            </div>
+
+            <div class="grid-2">
+                <section class="panel-inner">
+                    <h2>Users</h2>
+                    <button id="refresh-users" type="button">Refresh Users</button>
+                    <div id="admin-users-list" class="list"></div>
+                </section>
+
+                <section class="panel-inner">
+                    <h2>Audit Logs</h2>
+                    <button id="refresh-logs" type="button">Refresh Logs</button>
+                    <div id="admin-logs-list" class="list"></div>
+                </section>
+            </div>
+        </section>
+    </main>
+
+    <script src="admin.js"></script>
+</body>
+</html>

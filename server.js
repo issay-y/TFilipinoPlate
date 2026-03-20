@@ -8,6 +8,7 @@ import recipeRoutes, { initRecipes } from "./routes/recipe.js";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import aiRoutes from "./routes/ai.js";
+import adminRoutes from "./routes/admin.routes.js";
 import cors from "cors";
 import express from "express";
 import dotenv from "dotenv";
@@ -35,6 +36,7 @@ app.use("/api/bookmarks", bookmarkRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/cooking-history", cookingHistoryRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Connect to MongoDB.
 mongoose
