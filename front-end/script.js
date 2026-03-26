@@ -1,5 +1,6 @@
 const API_BASE_URL = "http://localhost:3000/api";
 
+
 //Signup and Login are included in guest-home html since they are only relevant to guests.
 // Once logged in, the user will be redirected to home.html where they can access the full features of the app;
 // including bookmarks and cooking history. The script.js file is shared between both pages for common functionality
@@ -102,6 +103,27 @@ function formatInstructionSteps(instructions) {
         .filter((step) => step.length > 0);
 }
 
+function renderRecipeLoading() {
+    const container = document.getElementById("recipe-list");
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = `
+        <div class="recipe-loader" role="status" aria-live="polite" aria-label="Loading recipes">
+            <div class="recipe-loader-stage" aria-hidden="true">
+                <span class="steam steam-1"></span>
+                <span class="steam steam-2"></span>
+                <span class="steam steam-3"></span>
+                <span class="pot-lid"></span>
+                <span class="pot-body"></span>
+                <span class="pot-shadow"></span>
+            </div>
+            <p class="recipe-loader-text">Simmering recipe ideas...</p>
+        </div>
+    `;
+}
+
 function renderRecipes(recipes) {
     const container = document.getElementById("recipe-list");
     latestRenderedRecipes = Array.isArray(recipes) ? recipes : [];
@@ -199,6 +221,7 @@ async function runSearch(query = "") {
     }
 
     meta.textContent = "Loading recipes...";
+    renderRecipeLoading();
 
     try {
         const result = await fetchRecipes(query);
@@ -380,7 +403,8 @@ async function handleLoginSubmit(event) {
             localStorage.setItem("token", data.token);
         }
         setAuthMessage("Login successful. Redirecting...", false);
-        window.location.href = "index.html";
+        const nextPath = data.role === "admin" ? "../admin.html" : "user-home.html";
+        window.location.href = nextPath;
     } catch (error) {
         setAuthMessage(toFriendlyAuthError(error, "We could not sign you in right now. Please try again."));
     } finally {

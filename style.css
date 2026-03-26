@@ -1,15 +1,15 @@
 :root {
-	--bg: #f7f2e8;
-	--surface: #fffaf0;
-	--surface-strong: #fff;
-	--text: #2a241c;
-	--muted: #6f6556;
-	--accent: #b34b2c;
-	--accent-2: #264b4f;
-	--danger: #8b1e1e;
-	--border: #dfd4c0;
+	--bg: #ddd9ce;
+	--surface: #e8e3d8;
+	--surface-strong: #f4f1ea;
+	--text: #3c2415;
+	--muted: #5a4639;
+	--accent: #3c2415;
+	--accent-2: #6e4a32;
+	--danger: #7a1d1d;
+	--border: #cfc6b7;
 	--radius: 14px;
-	--shadow: 0 12px 30px rgba(38, 26, 10, 0.12);
+	--shadow: 0 12px 30px rgba(60, 36, 21, 0.15);
 }
 
 * {
@@ -19,7 +19,7 @@
 body {
 	margin: 0;
 	color: var(--text);
-	background: radial-gradient(circle at top right, #fce1b4 0, #f7f2e8 42%, #efe5d4 100%);
+	background: radial-gradient(circle at top right, #f0e9dc 0, #ddd9ce 45%, #cfc6b7 100%);
 	font-family: "Trebuchet MS", "Segoe UI", sans-serif;
 }
 
@@ -111,7 +111,7 @@ select {
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
 	padding: 12px;
-	background: #fffdf8;
+	background: #f4f1ea;
 }
 
 .list {
@@ -124,7 +124,7 @@ select {
 	border: 1px solid var(--border);
 	border-radius: 12px;
 	padding: 10px;
-	background: #fff;
+	background: #f4f1ea;
 }
 
 .card h3 {
@@ -135,8 +135,8 @@ select {
 	display: inline-block;
 	padding: 3px 8px;
 	border-radius: 99px;
-	background: #f5e5ce;
-	color: #5f3a1d;
+	background: #d3c8b8;
+	color: #3c2415;
 	font-size: 0.78rem;
 	margin-bottom: 8px;
 }

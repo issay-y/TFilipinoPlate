@@ -25,20 +25,25 @@ dotenv.config();
 // Create the Express app.
 const app = express();
 
+if (!process.env.MONGODB_URI || !process.env.JWT_SECRET || !process.env.GEMINI_API_KEY || !process.env.ADMIN_USERNAME || !process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+  console.error("Error: One or more required environment variables are not defined.");
+  process.exit(1);
+}
+
 // Set up shared middleware.
 const allowedOrigins = new Set([
-  "http://localhost:5500",
-  "http://127.0.0.1:5500",
-  "http://localhost:5501",
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:5501"
+  process.env.AO1,
+  process.env.AO2,
+  process.env.AO3,
+  process.env.AO4,
+  process.env.AO5,
+  process.env.AO6
 ]);
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow non-browser tools and file:// origin during local development.
-    if (!origin || origin === "null" || allowedOrigins.has(origin)) {
+    if (!origin || allowedOrigins.has(origin)) {
       return callback(null, true);
     }
     return callback(new Error("Not allowed by CORS"));
@@ -57,7 +62,7 @@ app.use("/api/admin", adminRoutes);
 
 // Connect to MongoDB.
 mongoose
-    .connect("mongodb://127.0.0.1:27017/filipino_plate")
+    .connect(process.env.MONGODB_URI)
     .then(() => console.log("Connected to MongoDB"))
     .catch((err) => console.error("Could not connect to MongoDB", err));
 

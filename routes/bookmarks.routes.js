@@ -1,11 +1,22 @@
 import express from "express";
+import { body, param } from "express-validator";
 import { Bookmark } from "../models/bookmark.models.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
+import { validateRequest } from "../middleware/requestValidation.middleware.js";
 
 const router = express.Router();
 
 // Add a recipe bookmark for the logged-in user.
-router.post("/add", verifyToken, async (req, res) => {
+router.post(
+    "/add",
+    verifyToken,
+    validateRequest([
+        body("recipe_id").trim().notEmpty().withMessage("recipe_id is required"),
+        body("recipe_name").trim().notEmpty().withMessage("recipe_name is required"),
+        body("recipe_image").optional({ values: "falsy" }).isString().withMessage("recipe_image must be a string"),
+        body("cooking_method").optional({ values: "falsy" }).isString().withMessage("cooking_method must be a string")
+    ]),
+    async (req, res) => {
     try {
         const { recipe_id, recipe_name, recipe_image, cooking_method } = req.body;
 
@@ -43,7 +54,11 @@ router.get("/", verifyToken, async (req, res) => {
 });
 
 // Delete a bookmark only if it belongs to the logged-in user.
-router.delete("/:id", verifyToken, async (req, res) => {
+router.delete(
+    "/:id",
+    verifyToken,
+    validateRequest([param("id").isMongoId().withMessage("Invalid bookmark id")]),
+    async (req, res) => {
     try {
         const { id } = req.params;
 

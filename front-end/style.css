@@ -141,6 +141,125 @@ select {
 	background: var(--accent-2);
 }
 
+.recipe-loader {
+	grid-column: 1 / -1;
+	min-height: 280px;
+	display: grid;
+	place-items: center;
+	border: 1px dashed var(--border);
+	border-radius: var(--radius);
+	background: linear-gradient(160deg, #fdf8ef 0%, #f5ebdd 100%);
+	text-align: center;
+	padding: 26px 16px;
+}
+
+.recipe-loader-stage {
+	position: relative;
+	width: 170px;
+	height: 130px;
+}
+
+.pot-body {
+	position: absolute;
+	bottom: 24px;
+	left: 35px;
+	width: 100px;
+	height: 52px;
+	background: #6d4a34;
+	border-radius: 0 0 20px 20px;
+	animation: pot-bob 1.8s ease-in-out infinite;
+}
+
+.pot-lid {
+	position: absolute;
+	bottom: 74px;
+	left: 42px;
+	width: 86px;
+	height: 14px;
+	background: #5a3c2b;
+	border-radius: 10px;
+}
+
+.pot-shadow {
+	position: absolute;
+	bottom: 12px;
+	left: 30px;
+	width: 110px;
+	height: 16px;
+	background: rgba(60, 36, 21, 0.2);
+	filter: blur(4px);
+	border-radius: 999px;
+	animation: shadow-pulse 1.8s ease-in-out infinite;
+}
+
+.steam {
+	position: absolute;
+	bottom: 92px;
+	width: 12px;
+	height: 40px;
+	border-radius: 999px;
+	background: linear-gradient(to top, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.78));
+	animation: steam-rise 1.6s ease-in-out infinite;
+}
+
+.steam-1 {
+	left: 58px;
+	animation-delay: 0s;
+}
+
+.steam-2 {
+	left: 80px;
+	animation-delay: 0.35s;
+}
+
+.steam-3 {
+	left: 102px;
+	animation-delay: 0.65s;
+}
+
+.recipe-loader-text {
+	margin-top: 10px;
+	font-weight: 600;
+	letter-spacing: 0.3px;
+	color: var(--muted);
+}
+
+@keyframes steam-rise {
+	0% {
+		opacity: 0;
+		transform: translateY(4px) scaleX(0.95);
+	}
+	25% {
+		opacity: 0.7;
+	}
+	100% {
+		opacity: 0;
+		transform: translateY(-24px) scaleX(1.15);
+	}
+}
+
+@keyframes pot-bob {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-2px);
+	}
+}
+
+@keyframes shadow-pulse {
+	0%,
+	100% {
+		transform: scaleX(1);
+		opacity: 0.2;
+	}
+	50% {
+		transform: scaleX(0.93);
+		opacity: 0.14;
+	}
+}
+
 .source-pill {
 	display: inline-block;
 	padding: 3px 8px;
