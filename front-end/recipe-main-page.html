@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipes | The Filipino Plate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="recipe-main-page.css">
+</head>
+<body class="site-body">
+
+<div class="header">
+    <div class="nav-left">
+        <a href="user-home.html" class="nav-item">Home</a>
+        <a href="about.html" class="nav-item">About</a>
+        <a href="recipe-main-page.html" class="nav-item active">Recipes</a>
+    </div>
+
+    <div class="logo">
+        <img src="filipinologo (1).png" alt="The Filipino Plate Logo">
+    </div>
+
+    <div class="nav-right">
+
+        <button class="icon-btn ai-btn" title="AI Kitchen Assistant" onclick="openModal('aiModal')">
+            <i class="fas fa-robot"></i>
+        </button>
+
+        <a href="#" class="icon-btn profile-link" title="My Profile">
+            <i class="fas fa-user-circle"></i>
+        </a>
+    </div>
+
+</div> 
+
+<main class="site-shell">
+            <section class="panel">
+                <h2>Recipe Search</h2>
+                <form id="recipe-search-form" class="form-inline">
+                    <input type="text" id="recipe-query" placeholder="Search recipes (e.g. adobo)">
+                    <button type="submit">Search</button>
+                </form>
+                <p id="recipe-search-meta" class="status-message"></p>
+            </section>
+
+            <section class="panel">
+                <h2>Recipes</h2>
+                <div id="recipe-list" class="list"></div>
+            </section>
+
+            <div id="recipe-detail-modal" class="modal hidden" aria-hidden="true">
+                <div class="modal-content recipe-detail-content">
+                    <span class="close" onclick="hideRecipeDetails()">&times;</span>
+                    <h2 id="recipe-detail-title">Recipe</h2>
+                    <p id="recipe-detail-source" class="source-pill"></p>
+                    <p id="recipe-detail-description"></p>
+                    <h3>Ingredients</h3>
+                    <ul id="recipe-detail-ingredients"></ul>
+                    <h3>Instructions</h3>
+                    <ol id="recipe-detail-steps" class="recipe-steps"></ol>
+                    <a id="recipe-detail-link" class="button-link hidden" href="#" target="_blank" rel="noopener noreferrer">Open full recipe source</a>
+                </div>
+            </div>
+        </main>
+
+<footer class="footer">
+    <div class="footer-content">
+        <h2 class="footer-brand">THE FILIPINO PLATE</h2>
+        <div class="footer-bottom">
+            <p>&copy; 2026 THE FILIPINO PLATE. ALL RIGHTS RESERVED.</p>
+        </div>
+    </div>
+</footer>
+</body>
+<script src="script.js"></script>
+</html>

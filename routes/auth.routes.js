@@ -1,10 +1,55 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { body } from "express-validator";
 import { User } from "../models/user.models.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
+import { validateRequest } from "../middleware/requestValidation.middleware.js";
 
 const router = express.Router();
+
+const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 5;
+const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const loginAttemptsByIdentity = new Map();
+
+function getAttemptKey(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function getAttemptState(key) {
+  const now = Date.now();
+  const existing = loginAttemptsByIdentity.get(key);
+
+  if (!existing || now - existing.firstAttemptAt > LOGIN_RATE_LIMIT_WINDOW_MS) {
+    const fresh = { count: 0, firstAttemptAt: now };
+    loginAttemptsByIdentity.set(key, fresh);
+    return fresh;
+  }
+
+  return existing;
+}
+
+function isRateLimited(key) {
+  return getAttemptState(key).count >= LOGIN_RATE_LIMIT_MAX_ATTEMPTS;
+}
+
+function incrementFailedAttempts(key) {
+  const state = getAttemptState(key);
+  state.count += 1;
+  loginAttemptsByIdentity.set(key, state);
+  return state.count;
+}
+
+function resetFailedAttempts(key) {
+  loginAttemptsByIdentity.delete(key);
+}
+
+function getRetryAfterSeconds(key) {
+  const state = getAttemptState(key);
+  const elapsedMs = Date.now() - state.firstAttemptAt;
+  const remainingMs = Math.max(0, LOGIN_RATE_LIMIT_WINDOW_MS - elapsedMs);
+  return Math.max(1, Math.ceil(remainingMs / 1000));
+}
 
 function isValidEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -12,7 +57,23 @@ function isValidEmail(email) {
 }
 
 // Create a new user account.
-router.post("/register", (req, res) => {
+router.post(
+  "/register",
+  validateRequest([
+    body("username").trim().notEmpty().withMessage("Username is required"),
+    body("email").trim().notEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
+    body("password")
+      .isLength({ min: 6 })
+      .withMessage("Password must be at least 6 characters long")
+      .matches(/[A-Z]/)
+      .withMessage("Password must contain an uppercase letter")
+      .matches(/[a-z]/)
+      .withMessage("Password must contain a lowercase letter")
+      .matches(/\d/)
+      .withMessage("Password must contain a number"),
+    body("allergens").optional().isArray().withMessage("Allergens must be an array")
+  ]),
+  (req, res) => {
   // Steps: validate input, check for duplicate email, hash password, save user, and return a token.
 
   const { username, email, password, allergens } = req.body;
@@ -68,7 +129,13 @@ router.post("/register", (req, res) => {
 });
 
 // Log in an existing user.
-router.post("/login", (req, res) => {
+router.post(
+  "/login",
+  validateRequest([
+    body("email").trim().notEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
+    body("password").notEmpty().withMessage("Password is required")
+  ]),
+  (req, res) => {
   // Steps: validate input, find user, check password, and return a token.
     const { email, password } = req.body;
   // Make sure email and password are provided.
@@ -80,9 +147,18 @@ router.post("/login", (req, res) => {
     return res.status(400).json({ message: "Invalid email format" });
   }
 
+  const attemptKey = getAttemptKey(email);
+  if (isRateLimited(attemptKey)) {
+    return res.status(429).json({
+      message: "Too many login attempts. Please try again later.",
+      retryAfterSeconds: getRetryAfterSeconds(attemptKey)
+    });
+  }
+
   // Find the account by email.
   User.findOne({ email }).then((user) => {
     if (!user) {
+      incrementFailedAttempts(attemptKey);
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
@@ -93,12 +169,20 @@ router.post("/login", (req, res) => {
         return res.status(500).json({ message: "Error on password comparison" });
       }
       if (!isMatch) {
+        incrementFailedAttempts(attemptKey);
+        if (isRateLimited(attemptKey)) {
+          return res.status(429).json({
+            message: "Too many login attempts. Please try again later.",
+            retryAfterSeconds: getRetryAfterSeconds(attemptKey)
+          });
+        }
         return res.status(400).json({ message: "Invalid email or password" });
       }
 
+      resetFailedAttempts(attemptKey);
       // Password is correct, so create a login token.
       const token =jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-      res.json({ token });
+      res.json({ token, role: user.role });
     });
   }).catch((err) => {
     console.error("Error:", err);

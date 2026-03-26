@@ -55,6 +55,15 @@ function normalizeIngredients(input) {
         .filter((item) => item.length > 0);
 }
 
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 function renderRecipes(recipes) {
     const container = document.getElementById("admin-recipes-list");
     if (!recipes.length) {
@@ -64,13 +73,13 @@ function renderRecipes(recipes) {
 
     container.innerHTML = recipes.map((recipe) => `
         <article class="card">
-            <h3>${recipe.title}</h3>
-            <p>${recipe.description || "No description"}</p>
-            <p><strong>Method:</strong> ${recipe.cooking_method || "n/a"}</p>
+            <h3>${escapeHtml(recipe.title)}</h3>
+            <p>${escapeHtml(recipe.description || "No description")}</p>
+            <p><strong>Method:</strong> ${escapeHtml(recipe.cooking_method || "n/a")}</p>
             <p><strong>Published:</strong> ${recipe.is_published ? "Yes" : "No"}</p>
             <div class="card-actions">
-                <button type="button" data-action="edit" data-id="${recipe._id}">Edit</button>
-                <button type="button" data-action="delete" data-id="${recipe._id}">Delete</button>
+                <button type="button" data-action="edit" data-id="${escapeHtml(recipe._id)}">Edit</button>
+                <button type="button" data-action="delete" data-id="${escapeHtml(recipe._id)}">Delete</button>
             </div>
         </article>
     `).join("");
@@ -93,23 +102,23 @@ function renderUsers(users) {
 
     container.innerHTML = users.map((user) => `
         <article class="card">
-            <h3>${user.username}</h3>
-            <p>${user.email}</p>
+            <h3>${escapeHtml(user.username)}</h3>
+            <p>${escapeHtml(user.email)}</p>
             <label>Role
-                <select data-role-select="${user._id}">
+                <select data-role-select="${escapeHtml(user._id)}">
                     <option value="user" ${user.role === "user" ? "selected" : ""}>user</option>
                     <option value="admin" ${user.role === "admin" ? "selected" : ""}>admin</option>
                 </select>
             </label>
             <label>Status
-                <select data-status-select="${user._id}">
+                <select data-status-select="${escapeHtml(user._id)}">
                     <option value="active" ${user.status === "active" ? "selected" : ""}>active</option>
                     <option value="suspended" ${user.status === "suspended" ? "selected" : ""}>suspended</option>
                 </select>
             </label>
             <div class="card-actions">
-                <button type="button" data-action="save-user" data-id="${user._id}">Save</button>
-                <button type="button" data-action="delete-user" data-id="${user._id}">Delete</button>
+                <button type="button" data-action="save-user" data-id="${escapeHtml(user._id)}">Save</button>
+                <button type="button" data-action="delete-user" data-id="${escapeHtml(user._id)}">Delete</button>
             </div>
         </article>
     `).join("");
@@ -132,9 +141,9 @@ function renderLogs(logs) {
 
     container.innerHTML = logs.map((log) => `
         <article class="card">
-            <h3>${log.action}</h3>
-            <p><strong>Actor:</strong> ${log.actor_email || log.actor_user_id}</p>
-            <p><strong>Target:</strong> ${log.target_model} (${log.target_id})</p>
+            <h3>${escapeHtml(log.action)}</h3>
+            <p><strong>Actor:</strong> ${escapeHtml(log.actor_email || log.actor_user_id)}</p>
+            <p><strong>Target:</strong> ${escapeHtml(log.target_model)} (${escapeHtml(log.target_id)})</p>
             <p><strong>Time:</strong> ${new Date(log.created_at).toLocaleString()}</p>
         </article>
     `).join("");

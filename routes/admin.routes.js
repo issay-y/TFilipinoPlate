@@ -1,7 +1,9 @@
 import express from "express";
 import mongoose from "mongoose";
+import { body, param, query } from "express-validator";
 import { verifyToken } from "../middleware/auth.middleware.js";
 import { requireAdmin } from "../middleware/roleCheck.middleware.js";
+import { validateRequest } from "../middleware/requestValidation.middleware.js";
 import { User } from "../models/user.models.js";
 import { AuditLog } from "../models/auditLog.models.js";
 import { Recipe } from "../models/recipe.models.js";
@@ -60,7 +62,15 @@ router.get("/users", verifyToken, requireAdmin, async (req, res) => {
 });
 
 // List recent admin audit logs.
-router.get("/logs", verifyToken, requireAdmin, async (req, res) => {
+router.get(
+    "/logs",
+    verifyToken,
+    requireAdmin,
+    validateRequest([
+        query("page").optional().isInt({ min: 1 }).withMessage("page must be a positive integer"),
+        query("pageSize").optional().isInt({ min: 1, max: 100 }).withMessage("pageSize must be 1 to 100")
+    ]),
+    async (req, res) => {
     try {
         const page = clampNumber(req.query.page, 1, 100000, 1);
         const pageSize = clampNumber(req.query.pageSize, 1, 100, 20);
@@ -87,7 +97,12 @@ router.get("/logs", verifyToken, requireAdmin, async (req, res) => {
 });
 
 // List internal recipes managed by admins.
-router.get("/recipes", verifyToken, requireAdmin, async (req, res) => {
+router.get(
+    "/recipes",
+    verifyToken,
+    requireAdmin,
+    validateRequest([query("q").optional().isString().withMessage("q must be a string")]),
+    async (req, res) => {
     try {
         const q = normalizeString(req.query.q).toLowerCase();
         const filter = {};
@@ -109,7 +124,20 @@ router.get("/recipes", verifyToken, requireAdmin, async (req, res) => {
 });
 
 // Create an internal recipe.
-router.post("/recipes", verifyToken, requireAdmin, async (req, res) => {
+router.post(
+    "/recipes",
+    verifyToken,
+    requireAdmin,
+    validateRequest([
+        body("title").trim().notEmpty().withMessage("Recipe title is required"),
+        body("description").optional().isString().withMessage("description must be a string"),
+        body("instructions").optional().isString().withMessage("instructions must be a string"),
+        body("image").optional({ values: "falsy" }).isString().withMessage("image must be a string"),
+        body("cooking_method").optional({ values: "falsy" }).isString().withMessage("cooking_method must be a string"),
+        body("ingredients").optional().isArray().withMessage("ingredients must be an array"),
+        body("is_published").optional().isBoolean().withMessage("is_published must be boolean")
+    ]),
+    async (req, res) => {
     try {
         const title = normalizeString(req.body.title);
         const description = normalizeString(req.body.description);
@@ -157,7 +185,21 @@ router.post("/recipes", verifyToken, requireAdmin, async (req, res) => {
 });
 
 // Update an internal recipe.
-router.put("/recipes/:id", verifyToken, requireAdmin, async (req, res) => {
+router.put(
+    "/recipes/:id",
+    verifyToken,
+    requireAdmin,
+    validateRequest([
+        param("id").isMongoId().withMessage("Invalid recipe id"),
+        body("title").optional().isString().withMessage("title must be a string"),
+        body("description").optional().isString().withMessage("description must be a string"),
+        body("instructions").optional().isString().withMessage("instructions must be a string"),
+        body("image").optional({ values: "falsy" }).isString().withMessage("image must be a string"),
+        body("cooking_method").optional({ values: "falsy" }).isString().withMessage("cooking_method must be a string"),
+        body("ingredients").optional().isArray().withMessage("ingredients must be an array"),
+        body("is_published").optional().isBoolean().withMessage("is_published must be boolean")
+    ]),
+    async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -222,7 +264,12 @@ router.put("/recipes/:id", verifyToken, requireAdmin, async (req, res) => {
 });
 
 // Delete an internal recipe.
-router.delete("/recipes/:id", verifyToken, requireAdmin, async (req, res) => {
+router.delete(
+    "/recipes/:id",
+    verifyToken,
+    requireAdmin,
+    validateRequest([param("id").isMongoId().withMessage("Invalid recipe id")]),
+    async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -262,7 +309,15 @@ router.delete("/recipes/:id", verifyToken, requireAdmin, async (req, res) => {
 });
 
 // Change a user's role (admin or user).
-router.put("/users/:id/role", verifyToken, requireAdmin, async (req, res) => {
+router.put(
+    "/users/:id/role",
+    verifyToken,
+    requireAdmin,
+    validateRequest([
+        param("id").isMongoId().withMessage("Invalid user id"),
+        body("role").isIn(["user", "admin"]).withMessage("Role must be 'user' or 'admin'")
+    ]),
+    async (req, res) => {
     try {
         const { id } = req.params;
         const { role } = req.body;
@@ -325,7 +380,15 @@ router.put("/users/:id/role", verifyToken, requireAdmin, async (req, res) => {
 });
 
 // Change a user's account status (active or suspended).
-router.put("/users/:id/status", verifyToken, requireAdmin, async (req, res) => {
+router.put(
+    "/users/:id/status",
+    verifyToken,
+    requireAdmin,
+    validateRequest([
+        param("id").isMongoId().withMessage("Invalid user id"),
+        body("status").isIn(["active", "suspended"]).withMessage("Status must be 'active' or 'suspended'")
+    ]),
+    async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
@@ -388,7 +451,12 @@ router.put("/users/:id/status", verifyToken, requireAdmin, async (req, res) => {
 });
 
 // Delete a user account.
-router.delete("/users/:id", verifyToken, requireAdmin, async (req, res) => {
+router.delete(
+    "/users/:id",
+    verifyToken,
+    requireAdmin,
+    validateRequest([param("id").isMongoId().withMessage("Invalid user id")]),
+    async (req, res) => {
     try {
         const { id } = req.params;
 

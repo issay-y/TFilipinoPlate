@@ -1,7 +1,9 @@
 import express from "express";
+import { body, query } from "express-validator";
 import { CookingHistory } from "../models/cookingHistory.models.js";
 import { Bookmark } from "../models/bookmark.models.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
+import { validateRequest } from "../middleware/requestValidation.middleware.js";
 import axios from "axios";
 
 const router = express.Router();
@@ -156,7 +158,16 @@ function mapSuggestionRecipe(item, matchedMethod, isFallback) {
 
 
 // Add cooking history entry for the logged-in user.
-router.post("/", verifyToken, async (req, res) => {
+router.post(
+    "/",
+    verifyToken,
+    validateRequest([
+        body("recipe_id").trim().notEmpty().withMessage("recipe_id is required"),
+        body("recipe_name").trim().notEmpty().withMessage("recipe_name is required"),
+        body("cooking_method").trim().notEmpty().withMessage("cooking_method is required"),
+        body("cooked_at").optional({ values: "falsy" }).isISO8601().withMessage("cooked_at must be a valid date")
+    ]),
+    async (req, res) => {
     try {
         const { recipe_id, recipe_name, cooking_method, cooked_at } = req.body;
 
@@ -215,7 +226,11 @@ router.get("/diversity", verifyToken, async (req, res) => {
     }
 });
 
-router.get("/suggestions/variety", verifyToken, async (req, res) => {
+router.get(
+    "/suggestions/variety",
+    verifyToken,
+    validateRequest([query("limit").optional().isInt({ min: 1, max: 10 }).withMessage("limit must be 1 to 10")]),
+    async (req, res) => {
     try {
         const limit = clampNumber(req.query.limit, 1, 10, 3);
         const stats = await getUserMethodStats(req.userId);

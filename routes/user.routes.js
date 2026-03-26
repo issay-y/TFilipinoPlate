@@ -1,5 +1,7 @@
 import express from "express";
+import { body } from "express-validator";
 import { verifyToken } from "../middleware/auth.middleware.js";
+import { validateRequest } from "../middleware/requestValidation.middleware.js";
 import { User } from "../models/user.models.js";
 
 const router = express.Router();
@@ -27,16 +29,20 @@ router.get("/allergens", verifyToken, async (req, res) => {
 });
 
 // Update the logged-in user's allergen list.
-router.put("/allergens", verifyToken, async (req, res) => {
+router.put(
+  "/allergens",
+  verifyToken,
+  validateRequest([
+    body("allergens").isArray().withMessage("Allergens must be an array"),
+    body("allergens.*").optional().isString().withMessage("Each allergen must be a string")
+  ]),
+  async (req, res) => {
   try {
     const userId = req.userId; // Set by auth middleware after token check.
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized: No user ID found in token" });
     }
     const { allergens } = req.body;
-    if (!Array.isArray(allergens)) {
-      return res.status(400).json({ message: "Allergens must be an array" });
-    }
 
     // Normalize values so the frontend always receives clean data.
     const normalizedAllergens = [...new Set(

@@ -1,5 +1,7 @@
 import express from "express";
 import axios from "axios";
+import { query } from "express-validator";
+import { validateRequest } from "../middleware/requestValidation.middleware.js";
 import { Recipe } from "../models/recipe.models.js";
 
 const router = express.Router();
@@ -390,7 +392,14 @@ export async function initRecipes() {
 	console.log("Panlasang Pinoy recipe integration is ready.");
 }
 
-router.get("/", async (req, res) => {
+router.get(
+	"/",
+	validateRequest([
+		query("q").optional().isString().withMessage("q must be a string"),
+		query("num").optional().isInt({ min: 1, max: 100 }).withMessage("num must be 1 to 100"),
+		query("page").optional().isInt({ min: 1, max: 100 }).withMessage("page must be 1 to 100")
+	]),
+	async (req, res) => {
 	const q = String(req.query.q || "").trim();
 	const num = clampNumber(req.query.num, 1, 100, 10);
 	const page = clampNumber(req.query.page, 1, 100, 1);
