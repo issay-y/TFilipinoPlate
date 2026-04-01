@@ -134,7 +134,8 @@ function mapInternalRecipe(item) {
 		instructions: item.instructions || "",
 		image: item.image || null,
 		link: null,
-		source: "admin"
+		source: "admin",
+		cooking_time: null
 	};
 }
 
@@ -295,7 +296,7 @@ async function fetchFeaturedImage(mediaId) {
 }
 
 function extractIngredientsAndInstructions(htmlContent) {
-	if (!htmlContent) return { ingredients: [], instructions: "" };
+	if (!htmlContent) return { ingredients: [], instructions: "", cookingTime: null };
 	
 	try {
 		const html = htmlContent;
@@ -358,9 +359,20 @@ function extractIngredientsAndInstructions(htmlContent) {
 			instructions = steps.join("\n");
 		}
 		
-		return { ingredients, instructions };
+		// Extract cooking time from HTML (e.g., "Prep Time: 20 minutes", "Cook Time: 1 hour")
+		let cookingTime = null;
+		const timeMatch = html.match(/(?:prep\s+time|cook(?:ing)?\s+time|time)[\s:]*(\d+)\s*(?:minutes?|mins?|hour?)/i);
+		if (timeMatch) {
+			cookingTime = Number.parseInt(timeMatch[1], 10);
+			// If it's hours, convert to minutes
+			if (html.match(/(?:prep\s+time|cook(?:ing)?\s+time|time)[\s:]*\d+\s*hours?/i)) {
+				cookingTime = cookingTime * 60;
+			}
+		}
+		
+		return { ingredients, instructions, cookingTime };
 	} catch (error) {
-		return { ingredients: [], instructions: "" };
+		return { ingredients: [], instructions: "", cookingTime: null };
 	}
 }
 
@@ -377,6 +389,19 @@ function mapPanlasangPinoyRecipe(item, imageUrl = null, recipeData = {}) {
 		? `${cleanExcerpt.substring(0, 147).trim()}...`
 		: cleanExcerpt;
 	
+	// Extract cooking time from recipe data or HTML
+	let cookingTime = null;
+	if (recipeData?.cookingTime) {
+		cookingTime = recipeData.cookingTime;
+	} else {
+		// Try to find cooking time in HTML (e.g., "20 minutes", "1 hour 30 minutes")
+		const htmlContent = item?.content?.rendered || item?.content || "";
+		const timeMatch = htmlContent.match(/(?:prep\s+time|cook(?:ing)?\s+time|time)[\s:]*(\d+)\s*(?:minutes?|mins?|hour?)/i);
+		if (timeMatch) {
+			cookingTime = Number.parseInt(timeMatch[1], 10);
+		}
+	}
+	
 	return {
 		id: item?.id || null,
 		title: (item?.title?.rendered || item?.title || "").replace(/<[^>]*>/g, ""),
@@ -384,7 +409,8 @@ function mapPanlasangPinoyRecipe(item, imageUrl = null, recipeData = {}) {
 		ingredients: recipeData?.ingredients || [],
 		instructions: recipeData?.instructions || "",
 		image: imageUrl,
-		link: item?.link || null
+		link: item?.link || null,
+		cooking_time: cookingTime
 	};
 }
 

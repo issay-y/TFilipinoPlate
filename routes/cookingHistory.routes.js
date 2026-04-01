@@ -155,6 +155,21 @@ function mapSuggestionRecipe(item, matchedMethod, isFallback) {
     };
 }
 
+function getDayBounds(dateValue) {
+    const date = dateValue ? new Date(dateValue) : new Date();
+    if (Number.isNaN(date.getTime())) {
+        return null;
+    }
+
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+
+    return { start, end };
+}
+
 
 
 // Add cooking history entry for the logged-in user.
@@ -174,6 +189,28 @@ router.post(
         // Make sure required fields are included.
         if (!recipe_id || !recipe_name || !cooking_method) {
             return res.status(400).json({ message: "recipe_id, recipe_name, and cooking_method are required" });
+        }
+
+        const dayBounds = getDayBounds(cooked_at);
+        if (!dayBounds) {
+            return res.status(400).json({ message: "Invalid cooked_at date" });
+        }
+
+        // Prevent duplicate logging of the same recipe on the same day for this user.
+        const duplicateEntry = await CookingHistory.findOne({
+            user_id: req.userId,
+            recipe_id: String(recipe_id),
+            cooked_at: {
+                $gte: dayBounds.start,
+                $lte: dayBounds.end
+            }
+        }).select("_id cooked_at");
+
+        if (duplicateEntry) {
+            return res.status(409).json({
+                message: "This recipe is already logged as cooked for today.",
+                existingLog: duplicateEntry
+            });
         }
 
         // Save this cooking history item under the current user.

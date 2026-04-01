@@ -25,6 +25,9 @@ dotenv.config();
 // Create the Express app.
 const app = express();
 
+app.use(express.json({ limit: "15mb" }));
+app.use(express.urlencoded({ extended: true, limit: "15mb" }));
+
 if (!process.env.MONGODB_URI || !process.env.JWT_SECRET || !process.env.GEMINI_API_KEY || !process.env.ADMIN_USERNAME || !process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
   console.error("Error: One or more required environment variables are not defined.");
   process.exit(1);
@@ -49,7 +52,6 @@ app.use(cors({
     return callback(new Error("Not allowed by CORS"));
   }
 }));
-app.use(express.json());
 
 // Register API route groups.
 app.use("/api/auth", authRoutes);

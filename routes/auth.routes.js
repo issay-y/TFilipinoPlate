@@ -182,7 +182,20 @@ router.post(
       resetFailedAttempts(attemptKey);
       // Password is correct, so create a login token.
       const token =jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-      res.json({ token, role: user.role });
+      res.json({
+        token,
+        role: user.role,
+        user: {
+          _id: user._id,
+          username: user.username,
+          full_name: user.full_name || "",
+          email: user.email,
+          avatar: user.avatar || "",
+          role: user.role,
+          status: user.status,
+          allergens: user.allergens || []
+        }
+      });
     });
   }).catch((err) => {
     console.error("Error:", err);
@@ -195,7 +208,9 @@ router.get("/me", verifyToken, (req, res) => {
   const user = {
     _id: req.user._id,
     username: req.user.username,
+    full_name: req.user.full_name || "",
     email: req.user.email,
+    avatar: req.user.avatar || "",
     role: req.user.role,
     status: req.user.status,
     allergens: req.user.allergens || []

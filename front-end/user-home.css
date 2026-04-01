@@ -10,6 +10,9 @@ body {
     background-color: #ddd9ce; 
     font-family: 'Poppins', sans-serif;
     overflow-x: hidden; 
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .logo-text {
@@ -295,7 +298,7 @@ section.hero > .hero {
     color: #ddd9ce;
     padding: 60px 20px 40px 20px;
     width: 100%;
-    margin-top: 100px;
+    margin-top: auto;
 }
 
 .footer-content {

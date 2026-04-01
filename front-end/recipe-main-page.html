@@ -27,7 +27,7 @@
             <i class="fas fa-robot"></i>
         </button>
 
-        <a href="#" class="icon-btn profile-link" title="My Profile">
+        <a href="userprofile.html" class="icon-btn profile-link" title="My Profile">
             <i class="fas fa-user-circle"></i>
         </a>
     </div>
@@ -42,6 +42,71 @@
                     <button type="submit">Search</button>
                 </form>
                 <p id="recipe-search-meta" class="status-message"></p>
+            </section>
+
+            <section class="panel">
+                <h2>Filters</h2>
+                <button id="filters-toggle-btn" class="filters-toggle-btn">
+                    <i class="fas fa-filter"></i> Show Filters
+                </button>
+                <div id="filters-content" class="filters-content hidden">
+                    <div class="filter-group">
+                        <label for="method-filter">Cooking Method:</label>
+                        <select id="method-filter" class="filter-select">
+                            <option value="">All Methods</option>
+                            <option value="adobo">Adobo</option>
+                            <option value="bake">Bake</option>
+                            <option value="binagoongan">Binagoongan</option>
+                            <option value="binalot">Binalot</option>
+                            <option value="binanlian">Binanlian</option>
+                            <option value="binuro">Binuro</option>
+                            <option value="boil">Boil</option>
+                            <option value="braise">Braise</option>
+                            <option value="busal">Busal</option>
+                            <option value="chicharon">Chicharon</option>
+                            <option value="dinaing">Dinaing</option>
+                            <option value="fry">Fry</option>
+                            <option value="ginataan">Ginataan</option>
+                            <option value="grill">Grill</option>
+                            <option value="halabos">Halabos</option>
+                            <option value="hinurno">Hinurno</option>
+                            <option value="kinilaw">Kinilaw</option>
+                            <option value="lechon">Lechon</option>
+                            <option value="lumpia">Lumpia</option>
+                            <option value="minatamis">Minatamis</option>
+                            <option value="nilasing">Nilasing</option>
+                            <option value="paksiw">Paksiw</option>
+                            <option value="pinakbet">Pinakbet</option>
+                            <option value="pinatisan">Pinatisan</option>
+                            <option value="pinikpikan">Pinikpikan</option>
+                            <option value="relleno">Relleno</option>
+                            <option value="roast">Roast</option>
+                            <option value="sarciado">Sarciado</option>
+                            <option value="sariwa">Sariwa</option>
+                            <option value="saute">Saute</option>
+                            <option value="simmer">Simmer</option>
+                            <option value="steam">Steam</option>
+                            <option value="stew">Stew</option>
+                            <option value="tapa">Tapa</option>
+                            <option value="tostado">Tostado</option>
+                            <option value="torta">Torta</option>
+                            <option value="totso">Totso</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="time-filter">Cooking Time (max minutes):</label>
+                        <input type="number" id="time-filter" class="filter-input" placeholder="e.g. 30" min="0" max="999">
+                    </div>
+
+                    <div class="filter-group">
+                        <label for="allergen-filter">Exclude Allergens (comma separated):</label>
+                        <input type="text" id="allergen-filter" class="filter-input" placeholder="e.g. peanuts, shellfish, dairy">
+                        <small>Enter allergens separated by commas (e.g. peanuts, shellfish, dairy, eggs, soy, gluten, fish, tree nuts, sesame, mustard, etc.)</small>
+                    </div>
+
+                    <button id="filter-reset-btn" class="filter-reset">Reset Filters</button>
+                </div>
             </section>
 
             <section class="panel">
@@ -72,6 +137,6 @@
         </div>
     </div>
 </footer>
-</body>
 <script src="script.js"></script>
+</body>
 </html>

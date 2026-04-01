@@ -11,6 +11,9 @@ body {
     font-family: 'Poppins', sans-serif;
     color: #3c2415;
     overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .header {
@@ -265,6 +268,7 @@ body {
     color: #ddd9ce;
     padding: 40px 20px;
     text-align: center;
+    margin-top: auto;
 }
 
 .footer-brand {

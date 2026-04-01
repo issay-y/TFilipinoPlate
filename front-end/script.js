@@ -39,13 +39,13 @@ async function login(email, password) {
     return data;
 }
 
-async function fetchRecipes(query = "") {
+async function fetchRecipes(query = "", limit = 20, page = 1) {
     const params = new URLSearchParams();
     if (query.trim()) {
         params.set("q", query.trim());
     }
-    params.set("num", "20");
-    params.set("page", "1");
+    params.set("num", String(limit));
+    params.set("page", String(page));
 
     const response = await fetch(`${API_BASE_URL}/recipes?${params.toString()}`);
     const data = await response.json().catch(() => ({}));
@@ -55,6 +55,29 @@ async function fetchRecipes(query = "") {
     }
 
     return data;
+}
+
+async function fetchRecipesAcrossPages(query = "", pageSize = 20, maxPages = 5) {
+    const collectedRecipes = [];
+    let lastQuery = query;
+
+    for (let page = 1; page <= maxPages; page += 1) {
+        const result = await fetchRecipes(query, pageSize, page);
+        lastQuery = result.query || lastQuery;
+
+        if (Array.isArray(result.recipes) && result.recipes.length > 0) {
+            collectedRecipes.push(...result.recipes);
+        }
+
+        if (!Array.isArray(result.recipes) || result.recipes.length < pageSize) {
+            break;
+        }
+    }
+
+    return {
+        query: lastQuery,
+        recipes: collectedRecipes
+    };
 }
 
 function escapeHtml(value) {
@@ -67,12 +90,39 @@ function escapeHtml(value) {
 }
 
 let latestRenderedRecipes = [];
+let latestAllRecipes = [];
 let bookmarkedRecipeIds = new Set();
 let bookmarkIdByRecipeId = new Map();
 
 function getAuthToken() {
     return localStorage.getItem("token") || "";
 }
+
+async function fetchUserAllergens() {
+    const token = getAuthToken();
+    if (!token) {
+        return [];
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            return [];
+        }
+
+        const data = await response.json();
+        return Array.isArray(data.user?.allergens) ? data.user.allergens : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+
 
 async function hasValidUserSession() {
     const token = getAuthToken();
@@ -108,6 +158,127 @@ function normalizeRecipeId(recipe) {
         .trim()
         .toLowerCase()
         .replace(/\s+/g, "-");
+}
+
+function applyRecipeFilters(recipes) {
+    const methodFilter = document.getElementById("method-filter")?.value || "";
+    const timeFilter = Number.parseInt(document.getElementById("time-filter")?.value || "0", 10);
+    const allergenInput = document.getElementById("allergen-filter")?.value || "";
+    const allergenFilter = allergenInput
+        .split(",")
+        .map((item) => item.trim().toLowerCase())
+        .filter((item) => item.length > 0);
+
+    return recipes.filter((recipe) => {
+        // Infer cooking method if not present
+        const recipeMethod = recipe.cooking_method 
+            ? String(recipe.cooking_method).toLowerCase() 
+            : inferCookingMethodFromRecipe(recipe);
+
+        // Method filter
+        if (methodFilter) {
+            if (recipeMethod !== methodFilter.toLowerCase()) {
+                return false;
+            }
+        }
+
+        // Time filter (check if recipe has cooking_time field and it's within limit)
+        if (timeFilter > 0 && recipe.cooking_time) {
+            if (Number.parseInt(recipe.cooking_time, 10) > timeFilter) {
+                return false;
+            }
+        }
+
+        // Allergen filter (check if recipe ingredients contain allergens)
+        if (allergenFilter.length > 0 && Array.isArray(recipe.ingredients)) {
+            const ingredientsText = recipe.ingredients.join(" ").toLowerCase();
+            const hasAllergen = allergenFilter.some((allergen) => ingredientsText.includes(allergen));
+            if (hasAllergen) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+}
+
+function hasActiveRecipeFilters() {
+    const methodFilter = document.getElementById("method-filter")?.value || "";
+    const timeFilter = document.getElementById("time-filter")?.value || "";
+    const allergenFilter = document.getElementById("allergen-filter")?.value || "";
+
+    return Boolean(methodFilter.trim() || timeFilter.trim() || allergenFilter.trim());
+}
+
+function getEffectiveRecipeSearchQuery(query = "") {
+    const trimmedQuery = String(query || "").trim();
+    if (trimmedQuery.length > 0) {
+        return trimmedQuery;
+    }
+
+    const methodFilter = document.getElementById("method-filter")?.value || "";
+    return methodFilter.trim();
+}
+
+const COOKING_METHOD_KEYWORDS = {
+    adobo: ["adobo"],
+    bake: ["bake", "baked", "oven"],
+    binagoongan: ["binagoongan", "bagoong"],
+    binalot: ["binalot", "banana leaves", "pandan"],
+    binanlian: ["binanlian", "blanch", "blanched"],
+    binuro: ["binuro"],
+    boil: ["boil", "boiled", "nilaga", "tinola", "pinangat"],
+    braise: ["braise", "braised"],
+    busal: ["busal"],
+    chicharon: ["chicharon"],
+    dinaing: ["dinaing"],
+    fry: ["fry", "fried", "prito", "crispy", "pinirito"],
+    ginataan: ["ginataan", "gata", "guinataan"],
+    grill: ["grill", "grilled", "ihaw", "inasal", "inihaw"],
+    halabos: ["halabos"],
+    hinurno: ["hinurno", "hurno"],
+    kinilaw: ["kinilaw", "kilawin", "ceviche"],
+    lechon: ["lechon", "nilechon"],
+    lumpia: ["lumpia", "turon"],
+    minatamis: ["minatamis"],
+    nilasing: ["nilasing"],
+    paksiw: ["paksiw", "pinaksiw"],
+    pinakbet: ["pinakbet"],
+    pinatisan: ["pinatisan"],
+    pinikpikan: ["pinikpikan"],
+    relleno: ["relleno", "stuffed"],
+    roast: ["roast", "roasted"],
+    sarciado: ["sarciado"],
+    sariwa: ["sariwa"],
+    saute: ["saute", "sauteed", "gisa", "ginisa", "sinangag"],
+    simmer: ["simmer", "slow cook", "sinigang"],
+    steam: ["steam", "steamed"],
+    stew: ["stew", "caldereta", "kaldereta", "menudo", "afritada"],
+    tapa: ["tapa", "tinapa"],
+    tostado: ["tostado"],
+    torta: ["torta"],
+    totso: ["totso"]
+};
+
+function inferCookingMethodFromRecipe(recipe) {
+    const providedMethod = String(recipe?.cooking_method || "").trim().toLowerCase();
+    if (providedMethod && providedMethod !== "unknown" && providedMethod !== "n/a") {
+        return providedMethod;
+    }
+
+    const haystack = [
+        String(recipe?.title || ""),
+        String(recipe?.description || ""),
+        String(recipe?.instructions || "")
+    ].join(" ").toLowerCase();
+
+    for (const [method, keywords] of Object.entries(COOKING_METHOD_KEYWORDS)) {
+        if (keywords.some((keyword) => haystack.includes(keyword))) {
+            return method;
+        }
+    }
+
+    return "unknown";
 }
 
 function setRecipeMetaMessage(message, isError = false) {
@@ -156,13 +327,43 @@ async function addRecipeBookmark(recipe) {
             recipe_id: normalizeRecipeId(recipe),
             recipe_name: recipe.title || "Untitled recipe",
             recipe_image: recipe.image || "",
-            cooking_method: recipe.instructions || ""
+            cooking_method: inferCookingMethodFromRecipe(recipe)
         })
     });
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
         throw new Error(data.message || "Failed to save bookmark");
+    }
+
+    return data;
+}
+
+async function addCookingHistoryEntry(recipe) {
+    const token = getAuthToken();
+    if (!token) {
+        throw new Error("Please log in first so we can track your cooked recipes.");
+    }
+
+    const method = inferCookingMethodFromRecipe(recipe);
+
+    const response = await fetch(`${API_BASE_URL}/cooking-history`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            recipe_id: normalizeRecipeId(recipe),
+            recipe_name: recipe.title || "Untitled recipe",
+            cooking_method: method,
+            cooked_at: new Date().toISOString()
+        })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.message || "Failed to log cooking history");
     }
 
     return data;
@@ -284,6 +485,31 @@ async function handleBookmarkByIndex(index, button) {
     }
 }
 
+async function handleCookedByIndex(index, button) {
+    const recipe = latestRenderedRecipes[index];
+    if (!recipe || !button) {
+        return;
+    }
+
+    button.disabled = true;
+    button.classList.add("is-saving");
+
+    try {
+        await addCookingHistoryEntry(recipe);
+        setRecipeMetaMessage(`Logged '${recipe.title || "Recipe"}' as cooked.`);
+    } catch (error) {
+        const message = String(error.message || "");
+        if (message.toLowerCase().includes("already logged as cooked for today")) {
+            setRecipeMetaMessage(`'${recipe.title || "Recipe"}' is already logged for today.`, true);
+        } else {
+            setRecipeMetaMessage(message || "Could not save cooking history.", true);
+        }
+    } finally {
+        button.disabled = false;
+        button.classList.remove("is-saving");
+    }
+}
+
 function getSourceLabel(recipe) {
     return recipe.source === "admin" ? "Admin Recipe" : "Panlasang Pinoy";
 }
@@ -342,11 +568,14 @@ function renderRecipeLoading() {
 
 function renderRecipes(recipes) {
     const container = document.getElementById("recipe-list");
-    latestRenderedRecipes = Array.isArray(recipes) ? recipes : [];
+    
+    // Store all recipes and then apply filters
+    latestAllRecipes = Array.isArray(recipes) ? recipes : [];
+    latestRenderedRecipes = applyRecipeFilters(latestAllRecipes);
 
     if (!latestRenderedRecipes.length) {
         container.innerHTML = "<p>No recipes found.</p>";
-        return;
+        return 0;
     }
 
     container.innerHTML = latestRenderedRecipes.map((recipe, index) => {
@@ -369,6 +598,9 @@ function renderRecipes(recipes) {
                 <p>${escapeHtml(recipe.description || "No description")}</p>
                 <div class="card-actions">
                     <button type="button" class="view-details-btn" data-index="${index}">View details</button>
+                    <button type="button" class="secondary-btn cooked-btn" data-index="${index}" title="Log as cooked">
+                        Cooked this
+                    </button>
                     <button
                         type="button"
                         class="bookmark-btn ${isBookmarked ? "is-bookmarked" : ""}"
@@ -384,6 +616,8 @@ function renderRecipes(recipes) {
             </article>
         `;
     }).join("");
+
+    return latestRenderedRecipes.length;
 }
 
 function showRecipeDetailsByIndex(index) {
@@ -453,9 +687,13 @@ async function runSearch(query = "") {
     renderRecipeLoading();
 
     try {
-        const result = await fetchRecipes(query);
-        renderRecipes(result.recipes || []);
-        setRecipeMetaMessage(`${result.count || 0} recipes shown for '${result.query || "all"}'.`);
+        const effectiveQuery = getEffectiveRecipeSearchQuery(query);
+        const hasFilters = hasActiveRecipeFilters();
+        const result = hasFilters
+            ? await fetchRecipesAcrossPages(effectiveQuery, 20, 5)
+            : await fetchRecipes(effectiveQuery, 20, 1);
+        const renderedCount = renderRecipes(result.recipes || []);
+        setRecipeMetaMessage(`${renderedCount || 0} recipes shown for '${result.query || "all"}'.`);
     } catch (err) {
         setRecipeMetaMessage(err.message, true);
         const list = document.getElementById("recipe-list");
@@ -468,6 +706,49 @@ async function runSearch(query = "") {
 function initRecipeSearch() {
     const recipeSearchForm = document.getElementById("recipe-search-form");
     const recipeList = document.getElementById("recipe-list");
+    const methodFilter = document.getElementById("method-filter");
+    const timeFilter = document.getElementById("time-filter");
+    const allergenFilter = document.getElementById("allergen-filter");
+    const resetFilterBtn = document.getElementById("filter-reset-btn");
+    const filtersToggleBtn = document.getElementById("filters-toggle-btn");
+    const filtersContent = document.getElementById("filters-content");
+
+    // Filter toggle handler
+    if (filtersToggleBtn && filtersContent) {
+        filtersToggleBtn.addEventListener("click", () => {
+            filtersContent.classList.toggle("hidden");
+            filtersToggleBtn.classList.toggle("active");
+            
+            // Update button text
+            const isOpen = !filtersContent.classList.contains("hidden");
+            filtersToggleBtn.textContent = isOpen ? " Hide Filters" : " Show Filters";
+            filtersToggleBtn.innerHTML = `<i class="fas fa-filter"></i>${isOpen ? " Hide Filters" : " Show Filters"}`;
+        });
+    }
+
+    // Filter change handlers
+    const handleFilterChange = () => {
+        latestRenderedRecipes = applyRecipeFilters(latestAllRecipes);
+        renderRecipes(latestAllRecipes);
+    };
+
+    if (methodFilter) {
+        methodFilter.addEventListener("change", handleFilterChange);
+    }
+    if (timeFilter) {
+        timeFilter.addEventListener("input", handleFilterChange);
+    }
+    if (allergenFilter) {
+        allergenFilter.addEventListener("change", handleFilterChange);
+    }
+    if (resetFilterBtn) {
+        resetFilterBtn.addEventListener("click", () => {
+            if (methodFilter) methodFilter.value = "";
+            if (timeFilter) timeFilter.value = "";
+            if (allergenFilter) allergenFilter.value = "";
+            handleFilterChange();
+        });
+    }
 
     if (recipeList) {
         recipeList.addEventListener("click", async (event) => {
@@ -486,6 +767,16 @@ function initRecipeSearch() {
             }
 
             const detailsButton = target.closest(".view-details-btn");
+            const cookedButton = target.closest(".cooked-btn");
+
+            if (cookedButton) {
+                const index = Number.parseInt(cookedButton.getAttribute("data-index") || "-1", 10);
+                if (!Number.isNaN(index) && index >= 0) {
+                    await handleCookedByIndex(index, cookedButton);
+                }
+                return;
+            }
+
             if (!detailsButton) {
                 return;
             }
@@ -509,7 +800,20 @@ function initRecipeSearch() {
     });
 
     loadBookmarkedRecipeIds().finally(() => {
-        runSearch("");
+        // Load user allergens if logged in
+        fetchUserAllergens().then((userAllergens) => {
+            if (userAllergens.length > 0 && allergenFilter) {
+                allergenFilter.value = userAllergens.join(", ");
+            }
+            if (userAllergens.length > 0 && filtersContent) {
+                filtersContent.classList.remove("hidden");
+                if (filtersToggleBtn) {
+                    filtersToggleBtn.classList.add("active");
+                    filtersToggleBtn.innerHTML = '<i class="fas fa-filter"></i> Hide Filters';
+                }
+            }
+            runSearch("");
+        });
     });
 }
 
@@ -761,7 +1065,7 @@ async function initAboutHeaderAuthState() {
             <i class="fas fa-robot"></i>
         </button>
 
-        <a href="#" class="icon-btn profile-link" title="My Profile">
+        <a href="userprofile.html" class="icon-btn profile-link" title="My Profile">
             <i class="fas fa-user-circle"></i>
         </a>
     `;

@@ -1,10 +1,128 @@
 import express from "express";
+import bcrypt from "bcrypt";
 import { body } from "express-validator";
 import { verifyToken } from "../middleware/auth.middleware.js";
 import { validateRequest } from "../middleware/requestValidation.middleware.js";
+import { CookingHistory } from "../models/cookingHistory.models.js";
 import { User } from "../models/user.models.js";
 
 const router = express.Router();
+
+const FILIPINO_COOKING_METHODS = [
+  "adobo",
+  "bake",
+  "binagoongan",
+  "binalot",
+  "binanlian",
+  "binuro",
+  "boil",
+  "braise",
+  "busal",
+  "chicharon",
+  "dinaing",
+  "fry",
+  "ginataan",
+  "grill",
+  "halabos",
+  "hinurno",
+  "kinilaw",
+  "lechon",
+  "lumpia",
+  "minatamis",
+  "nilasing",
+  "paksiw",
+  "pinakbet",
+  "pinatisan",
+  "pinikpikan",
+  "relleno",
+  "roast",
+  "sarciado",
+  "sariwa",
+  "saute",
+  "simmer",
+  "steam",
+  "stew",
+  "tapa",
+  "tostado",
+  "torta",
+  "totso"
+];
+
+function normalizeString(value) {
+  return String(value ?? "").trim();
+}
+
+function normalizeEmail(value) {
+  return normalizeString(value).toLowerCase();
+}
+
+function normalizeAllergens(allergens) {
+  if (!Array.isArray(allergens)) {
+    return [];
+  }
+
+  return [...new Set(
+    allergens
+      .map((item) => normalizeString(item))
+      .filter((item) => item.length > 0)
+  )];
+}
+
+function isStrongPassword(value) {
+  const password = String(value || "");
+  return password.length >= 6 && /[A-Z]/.test(password) && /[a-z]/.test(password) && /\d/.test(password);
+}
+
+function normalizeMethod(method) {
+  const cleaned = normalizeString(method).toLowerCase();
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+function buildProfileResponse(userDoc) {
+  return {
+    _id: String(userDoc._id),
+    full_name: userDoc.full_name || "",
+    username: userDoc.username,
+    email: userDoc.email,
+    avatar: userDoc.avatar || "",
+    role: userDoc.role,
+    status: userDoc.status,
+    allergens: userDoc.allergens || [],
+    created_at: userDoc.created_at || null
+  };
+}
+
+function buildCookingStats(historyItems) {
+  const methodCountMap = {};
+
+  for (const item of historyItems) {
+    const normalizedMethod = normalizeMethod(item?.cooking_method);
+    if (!normalizedMethod) {
+      continue;
+    }
+
+    methodCountMap[normalizedMethod] = (methodCountMap[normalizedMethod] || 0) + 1;
+  }
+
+  const countByMethod = Object.entries(methodCountMap)
+    .sort((a, b) => b[1] - a[1])
+    .map(([method, count]) => ({ method, count }));
+
+  const totalCooked = historyItems.length;
+  const uniqueMethods = countByMethod.length;
+  const diversityScore = totalCooked === 0 ? 0 : Number((uniqueMethods / totalCooked).toFixed(2));
+  const neverUsedMethods = FILIPINO_COOKING_METHODS.filter((method) => !methodCountMap[method]);
+
+  return {
+    totalCooked,
+    uniqueMethods,
+    diversityScore,
+    mostCookedMethod: countByMethod[0]?.method || null,
+    leastCookedMethod: countByMethod[countByMethod.length - 1]?.method || null,
+    neverUsedMethods,
+    countByMethod
+  };
+}
 
 // Get the logged-in user's allergen list.
 
@@ -27,6 +145,136 @@ router.get("/allergens", verifyToken, async (req, res) => {
     return res.status(500).json({ message: "Error fetching allergens", error: err.message });
   }
 });
+
+// Get the logged-in user's profile.
+router.get("/profile", verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.json({ user: buildProfileResponse(user) });
+  } catch (err) {
+    console.error("Error fetching profile:", err.message);
+    return res.status(500).json({ message: "Error fetching profile", error: err.message });
+  }
+});
+
+// Get the logged-in user's cooking stats.
+router.get("/stats", verifyToken, async (req, res) => {
+  try {
+    const history = await CookingHistory.find({ user_id: req.userId })
+      .select("recipe_name cooking_method cooked_at")
+      .sort({ cooked_at: -1 })
+      .lean();
+
+    return res.json({
+      message: "Cooking stats retrieved",
+      stats: buildCookingStats(history),
+      recentHistory: history.slice(0, 5)
+    });
+  } catch (err) {
+    console.error("Error fetching cooking stats:", err.message);
+    return res.status(500).json({ message: "Error fetching cooking stats", error: err.message });
+  }
+});
+
+// Update the logged-in user's profile.
+router.put(
+  "/profile",
+  verifyToken,
+  validateRequest([
+    body("full_name").optional().isString().withMessage("full_name must be a string"),
+    body("username").optional().isString().withMessage("username must be a string"),
+    body("email").optional().isEmail().withMessage("Invalid email format"),
+    body("password").optional().isString().withMessage("password must be a string"),
+    body("allergens").optional().isArray().withMessage("allergens must be an array"),
+    body("avatar").optional().isString().withMessage("avatar must be a string")
+  ]),
+  async (req, res) => {
+    try {
+      const user = await User.findById(req.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const hasFullName = Object.prototype.hasOwnProperty.call(req.body, "full_name");
+      const hasUsername = Object.prototype.hasOwnProperty.call(req.body, "username");
+      const hasEmail = Object.prototype.hasOwnProperty.call(req.body, "email");
+      const hasPassword = Object.prototype.hasOwnProperty.call(req.body, "password") && normalizeString(req.body.password).length > 0;
+      const hasAllergens = Object.prototype.hasOwnProperty.call(req.body, "allergens");
+      const hasAvatar = Object.prototype.hasOwnProperty.call(req.body, "avatar") && normalizeString(req.body.avatar).length > 0;
+
+      if (!hasFullName && !hasUsername && !hasEmail && !hasPassword && !hasAllergens && !hasAvatar) {
+        return res.status(400).json({ message: "Provide at least one field to update" });
+      }
+
+      const nextFullName = hasFullName ? normalizeString(req.body.full_name) : user.full_name || "";
+      const nextUsername = hasUsername ? normalizeString(req.body.username) : user.username;
+      const nextEmail = hasEmail ? normalizeEmail(req.body.email) : user.email;
+      const nextAllergens = hasAllergens ? normalizeAllergens(req.body.allergens) : user.allergens || [];
+
+      if (hasFullName && !nextFullName) {
+        return res.status(400).json({ message: "Full name cannot be empty" });
+      }
+
+      if (hasUsername && !nextUsername) {
+        return res.status(400).json({ message: "Username cannot be empty" });
+      }
+
+      if (hasEmail && !nextEmail) {
+        return res.status(400).json({ message: "Email cannot be empty" });
+      }
+
+      if (hasPassword && !isStrongPassword(req.body.password)) {
+        return res.status(400).json({ message: "Password must be at least 6 characters long and contain uppercase, lowercase, and a number" });
+      }
+
+      const usernameTaken = hasUsername
+        ? await User.findOne({ username: nextUsername, _id: { $ne: user._id } }).select("_id")
+        : null;
+      if (usernameTaken) {
+        return res.status(409).json({ message: "Username already in use" });
+      }
+
+      const emailTaken = hasEmail
+        ? await User.findOne({ email: nextEmail, _id: { $ne: user._id } }).select("_id")
+        : null;
+      if (emailTaken) {
+        return res.status(409).json({ message: "Email already in use" });
+      }
+
+      user.full_name = nextFullName;
+      user.username = nextUsername;
+      user.email = nextEmail;
+      user.allergens = nextAllergens;
+
+      if (hasPassword) {
+        user.password = await bcrypt.hash(String(req.body.password), 10);
+      }
+
+      if (hasAvatar) {
+        user.avatar = normalizeString(req.body.avatar);
+      }
+
+      const updatedUser = await user.save();
+
+      return res.json({
+        message: "Profile updated successfully",
+        user: buildProfileResponse(updatedUser)
+      });
+    } catch (err) {
+      if (err?.code === 11000) {
+        const fieldName = Object.keys(err.keyPattern || {})[0] || "field";
+        return res.status(409).json({ message: `${fieldName} already in use` });
+      }
+
+      console.error("Error updating profile:", err.message);
+      return res.status(500).json({ message: "Error updating profile", error: err.message });
+    }
+  }
+);
 
 // Update the logged-in user's allergen list.
 router.put(

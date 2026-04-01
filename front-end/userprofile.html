@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | The Filipino Plate</title>
+    <link rel="icon" type="image/jpg" href="/images/favicon.png">
+    <link rel="stylesheet" href="userprofile.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="header">
+    <div class="nav-left">
+        <a href="user-home.html" class="nav-item">Home</a>
+        <a href="about.html" class="nav-item">About</a>
+        <a href="recipe-main-page.html" class="nav-item">Recipes</a>
+    </div>
+
+    <div class="logo-text">THE FILIPINO PLATE</div>
+
+    <div class="nav-right">
+        <a href="ai-page.html" class="icon-btn ai-btn" title="AI Kitchen Assistant">
+            <i class="fas fa-robot"></i>
+        </a>
+
+        <a href="userprofile.html" class="icon-btn profile-link active" title="My Profile">
+            <i class="fas fa-user-circle"></i>
+        </a>
+    </div>
+</div>
+
+<main class="site-shell profile-shell">
+    <div class="profile-layout">
+        <aside class="profile-sidebar panel">
+            <div class="profile-summary">
+                <div class="avatar-wrapper">
+                    <img id="avatarPreview" class="profile-avatar" alt="Profile picture">
+                    <input type="file" id="profileAvatarInput" accept="image/*" hidden>
+                    <label for="profileAvatarInput" class="edit-avatar-btn" title="Change Profile Picture">
+                        <i class="fas fa-camera"></i>
+                    </label>
+                </div>
+
+                <h3 id="sidebar-name">Juan Dela Cruz</h3>
+                <p id="sidebar-username">@juandc</p>
+                <p id="sidebar-email" class="sidebar-email">juan.delacruz@gmail.com</p>
+            </div>
+
+            <nav class="profile-nav">
+                <a href="#" aria-disabled="true"><i class="fas fa-heart"></i> Saved Recipes</a>
+                <a href="guest-home.html" id="logout-link" class="logout-link"><i class="fas fa-sign-out-alt"></i> Log Out</a>
+            </nav>
+        </aside>
+
+        <div class="profile-main-column">
+            <section class="profile-content panel">
+                <h2>Personal Information</h2>
+                <p class="section-desc">Update your profile details and dietary preferences here.</p>
+
+                <p id="profile-message" class="profile-message" role="status" aria-live="polite"></p>
+
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label for="fullName">Full Name</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-id-card"></i>
+                            <input type="text" id="fullName" name="full_name" value="Juan Dela Cruz" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-at"></i>
+                            <input type="text" id="username" name="username" value="juandc" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <div class="input-with-icon">
+                            <i class="fab fa-google"></i>
+                            <input type="email" id="email" name="email" value="juan.delacruz@gmail.com" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">New Password</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="password" name="password" placeholder="Leave blank to keep current password">
+                        </div>
+                        <small class="helper-text">Password must be at least 6 characters and include uppercase, lowercase, and a number.</small>
+                    </div>
+
+                    <div class="form-divider"></div>
+
+                    <h2>Health & Diet</h2>
+                    <p class="section-desc">We use this to filter out unsafe recipes from your searches and AI suggestions.</p>
+
+                    <div class="form-group">
+                        <label for="allergens">Allergens</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-shield-virus"></i>
+                            <input type="text" id="allergens" name="allergens" value="shrimp, peanuts" placeholder="e.g. dairy, nuts, shellfish">
+                        </div>
+                        <small class="helper-text">Separate multiple allergens with a comma.</small>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
+                        <button type="submit" class="save-btn" id="saveBtn">Save Changes</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="stats-panel panel">
+                <div class="stats-heading">
+                    <div>
+                        <h2>Cooking Stats</h2>
+                        <p class="section-desc">Based on what you've actually cooked so far.</p>
+                    </div>
+                    <span id="statsSummary" class="stats-summary">Loading stats...</span>
+                </div>
+
+                <div class="stats-grid">
+                    <article class="stat-card">
+                        <span class="stat-label">Total Cooked</span>
+                        <strong id="statTotalCooked" class="stat-value">0</strong>
+                    </article>
+                    <article class="stat-card">
+                        <span class="stat-label">Unique Methods</span>
+                        <strong id="statUniqueMethods" class="stat-value">0</strong>
+                    </article>
+                    <article class="stat-card">
+                        <span class="stat-label">Diversity Score</span>
+                        <strong id="statDiversityScore" class="stat-value">0%</strong>
+                    </article>
+                    <article class="stat-card">
+                        <span class="stat-label">Most Cooked</span>
+                        <strong id="statMostCooked" class="stat-value">-</strong>
+                    </article>
+                    <article class="stat-card">
+                        <span class="stat-label">Least Cooked</span>
+                        <strong id="statLeastCooked" class="stat-value">-</strong>
+                    </article>
+                    <article class="stat-card">
+                        <span class="stat-label">Never Tried</span>
+                        <strong id="statNeverTried" class="stat-value">0</strong>
+                    </article>
+                </div>
+
+                <div class="stats-columns">
+                    <div class="stats-block">
+                        <h3>Method Breakdown</h3>
+                        <div id="methodBreakdown" class="method-breakdown"></div>
+                    </div>
+
+                    <div class="stats-block">
+                        <h3>Never Tried Methods</h3>
+                        <div id="neverUsedMethods" class="chip-list"></div>
+                    </div>
+
+                    <div class="stats-block">
+                        <h3>Recent Recipes</h3>
+                        <div id="recentHistory" class="recent-history"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="footer-content">
+        <h1 class="footer-brand">THE FILIPINO PLATE</h1>
+        <div class="footer-bottom">
+            <p>&copy; 2026 THE FILIPINO PLATE. ALL RIGHTS RESERVED.</p>
+        </div>
+    </div>
+</footer>
+
+<script src="userprofile.js"></script>
+</body>
+</html>
