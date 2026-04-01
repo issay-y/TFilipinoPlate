@@ -1,3 +1,97 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: #ddd9ce;
+    color: #3c2415;
+    line-height: 1.6;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #3c2415;
+    padding: 12px 40px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+}
+
+.nav-left, 
+.nav-center, 
+.nav-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.nav-left {
+    justify-content: flex-start;
+}
+
+.logo img {
+    height: 20px;
+    width: auto;
+    display: block;
+}
+
+.nav-center {
+    justify-content: center;
+    gap: 35px;
+}
+
+.nav-item {
+    color: #ddd9ce;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: opacity 0.3s ease;
+}
+
+.nav-item:hover {
+    opacity: 0.7;
+}
+
+.nav-item.active {
+    border-bottom: 2px solid #ddd9ce;
+    padding-bottom: 2px;
+}
+
+.nav-right {
+    justify-content: flex-end;
+    gap: 15px;
+}
+
+.nav-login,
+.btn-signup {
+    background-color: #ddd9ce;
+    color: #3c2415;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    display: inline-block;
+    text-decoration: none;
+}
+
+.nav-login:hover,
+.btn-signup:hover {
+    background-color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 .about-hero {
     background-color: #3c2415; 
     color: #ddd9ce; 
@@ -32,7 +126,6 @@
 
 .about-text-left {
     flex: 1;
-    color: #3c2415;
 }
 
 .about-text-left h2 {
@@ -65,11 +158,50 @@
 .about-image-right img {
     max-width: 100%;
     border-radius: 20px;
-    box-shadow: 0 15px 30px rgba(60, 36, 21, 0.15); 
+    box-shadow: 0 15px 30px rgba(60, 36, 21, 0.2); 
 }
 
-.nav-item.active {
-    opacity: 0.6;
-    border-bottom: 2px solid #ddd9ce;
-    padding-bottom: 2px;
+.footer {
+    background: #3c2415;
+    color: #ddd9ce;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.footer-brand {
+    font-weight: 800;
+    font-family: 'Poppins';
+    font-size: large   ;
+    margin-bottom: 10px;
+}
+
+.footer-bottom {
+    font-size: 0.7rem;
+    opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        gap: 15px;
+        padding: 20px;
+    }
+    
+    .nav-left, 
+    .nav-center, 
+    .nav-right {
+        justify-content: center;
+        width: 100%;
+        flex: none;
+    }
+
+    .about-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 40px;
+    }
+    
+    .about-hero h1 {
+        font-size: 2.5rem;
+    }
 }

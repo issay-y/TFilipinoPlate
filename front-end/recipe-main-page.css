@@ -15,17 +15,18 @@ body {
 
 .header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    gap: 20px;
-    padding: 15px 40px;
+    justify-content: space-between;
     background-color: #3c2415;
+    padding: 12px 40px;
     position: sticky;
     top: 0;
     z-index: 1000;
+    width: 100%;
 }
 
-.nav-left,
+.nav-left, 
+.nav-center, 
 .nav-right {
     flex: 1;
     display: flex;
@@ -33,40 +34,46 @@ body {
 }
 
 .nav-left {
-    gap: 30px;
+    justify-content: flex-start;
 }
 
-.nav-right {
-    justify-content: flex-end;
-    gap: 12px;
+.logo img {
+    height: 20px;
+    width: auto;
+    display: block;
+}
+
+.nav-center {
+    justify-content: center;
+    gap: 35px;
 }
 
 .nav-item {
     color: #ddd9ce;
     text-decoration: none;
     font-weight: 600;
+    font-size: 1rem;
     transition: opacity 0.3s ease;
 }
 
 .nav-item:hover {
-    opacity: 0.75;
+    opacity: 0.7;
 }
 
 .nav-item.active {
-    opacity: 0.65;
     border-bottom: 2px solid #ddd9ce;
     padding-bottom: 2px;
 }
 
-.logo img {
-    width: 118px;
-    height: auto;
+.nav-right {
+    justify-content: flex-end;
+    gap: 15px;
 }
 
 .icon-btn {
-    background-color: #5c3d2e;
-    color: #ddd9ce;
-    border: 2px solid #5c3d2e;
+    background-color: #ddd9ce;
+    color: #3c2415;
+    border: none;
     width: 44px;
     height: 44px;
     border-radius: 50%;
@@ -76,14 +83,13 @@ body {
     text-decoration: none;
     font-size: 1.2rem;
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: all 0.3s ease;
 }
 
 .icon-btn:hover {
-    background-color: transparent;
-    color: #ddd9ce;
-    border-color: #ddd9ce;
+    background-color: #ffffff;
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .site-shell {
@@ -210,7 +216,7 @@ select {
 .modal {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    background: rgba(0, 0, 0, 0.6);
     display: none;
     align-items: center;
     justify-content: center;
@@ -539,39 +545,22 @@ select {
 }
 
 .footer {
-    background-color: #3c2415;
+    background: #3c2415;
     color: #ddd9ce;
-    padding: 60px 20px 40px 20px;
-    width: 100%;
-    margin-top: 40px;
-}
-
-.footer-content {
-    max-width: 1200px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 30px;
-}
-
-.footer-brand {
-    font-size: 2.2rem;
-    font-weight: 800;
-    letter-spacing: 2px;
-}
-
-.footer-bottom {
-    width: 100%;
-    padding-top: 30px;
-    border-top: 1px solid rgba(221, 217, 206, 0.15);
+    padding: 40px 20px;
     text-align: center;
 }
 
-.footer-bottom p {
-    font-size: 0.8rem;
-    opacity: 0.8;
-    letter-spacing: 1px;
+.footer-brand {
+    font-weight: 800;
+    font-family: 'Poppins';
+    font-size: large   ;
+    margin-bottom: 10px;
+}
+
+.footer-bottom {
+    font-size: 0.7rem;
+    opacity: 0.5;
 }
 
 @media (max-width: 900px) {
@@ -579,7 +568,7 @@ select {
         padding: 14px 18px;
     }
 
-    .nav-left {
+    .nav-center {
         gap: 14px;
     }
 
@@ -588,7 +577,7 @@ select {
     }
 
     .logo img {
-        width: 90px;
+        height: 35px;
     }
 
     .recipe-grid {
@@ -596,25 +585,23 @@ select {
     }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
     .header {
-        flex-wrap: wrap;
-        row-gap: 10px;
+        flex-direction: column;
+        gap: 15px;
+        padding: 20px;
     }
-
-    .nav-left,
+    
+    .nav-left, 
+    .nav-center, 
     .nav-right {
-        flex: 1 1 100%;
         justify-content: center;
-    }
-
-    .logo {
-        order: -1;
         width: 100%;
-        display: flex;
-        justify-content: center;
+        flex: none;
     }
+}
 
+@media (max-width: 640px) {
     .recipes-container {
         padding: 0 14px 70px;
     }

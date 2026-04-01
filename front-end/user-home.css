@@ -14,63 +14,44 @@ body {
 
 .header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 15px 60px;
+    justify-content: space-between;
     background-color: #3c2415;
+    padding: 12px 40px;
     position: sticky;
     top: 0;
     z-index: 1000;
-    overflow: hidden;
-    position: sticky;
-    top: 0;
+    width: 100%;
+}
+
+.nav-left, 
+.nav-center, 
+.nav-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
 }
 
 .nav-left {
-    flex: 1;
-    display: flex;
-    gap: 40px;
-    align-items: center;
+    justify-content: flex-start;
 }
 
-.nav-left, .nav-right {
-    flex: 1;
-    display: flex;
-    align-items: center;
+.logo img {
+    height: 20px;
+    width: auto;
+    display: block;
 }
 
-.nav-right {
-    justify-content: flex-end; 
-}
-
-.user-btn {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: #3c2415;
-    background-color: #ddd9ce;
-    padding: 8px 18px;
-    border-radius: 50px;
-    text-decoration: none;
-    font-weight: 700;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-    border: 2px solid #ddd9ce;
-}
-
-.user-btn i {
-    font-size: 1.2rem;
-}
-
-.user-btn:hover {
-    background-color: transparent;
-    color: #ddd9ce;
+.nav-center {
+    justify-content: center;
+    gap: 35px;
 }
 
 .nav-item {
     color: #ddd9ce;        
     text-decoration: none;  
     font-weight: 600;        
+    font-size: 1rem;
     transition: opacity 0.3s ease;
 }
 
@@ -78,12 +59,14 @@ body {
     opacity: 0.7;
 }
 
+.nav-item.active {
+    border-bottom: 2px solid #ddd9ce;
+    padding-bottom: 2px;
+}
+
 .nav-right {
-    display: flex;
-    gap: 15px;
     justify-content: flex-end;
-    align-items: center;
-    flex: 1;
+    gap: 15px;
 }
 
 .icon-btn {
@@ -113,15 +96,6 @@ body {
 .ai-btn:hover {
     box-shadow: 0 0 12px rgba(221, 217, 206, 0.5);
 }
-
-.icon-btn i {
-    display: block;
-}
-
-.logo {
-    flex: 0 0 auto;
-}
-
 
 section.hero {
     display: flex;
@@ -315,4 +289,30 @@ section.hero > .hero {
     font-size: 0.8rem;
     opacity: 0.6;
     letter-spacing: 1px;
+}
+
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        gap: 15px;
+        padding: 20px;
+    }
+    
+    .nav-left, 
+    .nav-center, 
+    .nav-right {
+        justify-content: center;
+        width: 100%;
+        flex: none;
+    }
+
+    section.hero > .hero {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .hero-right {
+        margin-top: 40px;
+        justify-content: center;
+    }
 }

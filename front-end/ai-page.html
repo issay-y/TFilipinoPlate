@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Kitchen Assistant | The Filipino Plate</title>
+    <link rel="icon" type="image/jpg" href="/images/favicon.png">
+    <link rel="stylesheet" href="ai-page.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="header">
+    <div class="nav-left">
+        <div class="logo">
+            <img src="filipinologo (1).png" alt="The Filipino Plate Logo">
+        </div>
+    </div>
+
+    <div class="nav-center">
+        <a href="user-home.html" class="nav-item">Home</a>
+        <a href="about.html" class="nav-item">About</a>
+        <a href="recipe-main-page.html" class="nav-item">Recipes</a>
+    </div>
+
+    <div class="nav-right">
+        <a href="ai-assistant.html" class="icon-btn ai-btn active" title="AI Kitchen Assistant">
+            <i class="fas fa-robot"></i>
+        </a>
+        <a href="userprofile.html" class="icon-btn profile-link" title="My Profile">
+            <i class="fas fa-user-circle"></i>
+        </a>
+    </div>
+</div>
+
+<main class="site-shell ai-shell">
+    <div class="ai-header">
+        <h1>AI KITCHEN ASSISTANT</h1>
+        <p>Tell us what's in your fridge, and let our AI magic suggest the perfect Filipino recipe instantly.</p>
+    </div>
+
+    <div class="ai-layout">
+        
+        <aside class="ai-input-panel panel">
+            <h2>Your Ingredients</h2>
+            
+            <form id="ai-form">
+                <div class="form-group">
+                    <label for="ingredients">What do you have?</label>
+                    <textarea id="ingredients" rows="4" placeholder="e.g., chicken, soy sauce, vinegar, garlic, pork belly..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="time">How much time do you have?</label>
+                    <select id="time">
+                        <option value="any">Any amount of time</option>
+                        <option value="15">Under 15 minutes</option>
+                        <option value="30">Under 30 minutes</option>
+                        <option value="60">Under 1 hour</option>
+                        <option value="slow">Slow cook (1+ hours)</option>
+                    </select>
+                </div>
+
+                <div class="form-group toggle-group">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="use-allergens" checked>
+                        <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-label">Apply my saved allergen filters</span>
+                </div>
+
+                <button type="submit" class="generate-btn">
+                    <i class="fas fa-magic"></i> Generate Recipe
+                </button>
+            </form>
+        </aside>
+
+        <section class="ai-results-panel panel" id="results-area">
+            
+            <div class="empty-state" id="empty-state">
+                <i class="fas fa-robot"></i>
+                <h3>Ready to Cook!</h3>
+                <p>Enter your ingredients on the left and hit generate.</p>
+            </div>
+
+        </section>
+    </div>
+</main>
+
+<footer class="footer">
+    <div class="footer-content">
+        <h1 class="footer-brand">THE FILIPINO PLATE</h1>
+        <div class="footer-bottom">
+            <p>&copy; 2026 THE FILIPINO PLATE. ALL RIGHTS RESERVED.</p>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
