@@ -1116,6 +1116,31 @@ function initGuestAuth() {
     if (signupForm) {
         signupForm.addEventListener("submit", handleSignupSubmit);
     }
+
+    initPasswordToggle();
+}
+
+function initPasswordToggle() {
+    const passwordToggles = document.querySelectorAll(".password-toggle");
+
+    passwordToggles.forEach((toggle) => {
+        toggle.addEventListener("click", (e) => {
+            e.preventDefault();
+            const wrapper = toggle.closest(".password-input-wrapper");
+            const input = wrapper.querySelector(".password-input");
+            const icon = toggle.querySelector("i");
+
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("fa-eye-slash");
+                icon.classList.add("fa-eye");
+            }
+        });
+    });
 }
 
 async function initAboutHeaderAuthState() {

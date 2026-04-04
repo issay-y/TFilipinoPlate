@@ -12,6 +12,9 @@ import adminRoutes from "./routes/admin.routes.js";
 import cors from "cors";
 import express from "express";
 import dotenv from "dotenv";
+import path from "path";
+// For root page wire with landing page
+import { fileURLToPath } from "url";
 // Use `net stop MongoDB` to stop the MongoDB service.
 // Use `net start MongoDB` to start the MongoDB service.
 // In MongoDB, data is stored in collections (similar to tables).
@@ -21,6 +24,9 @@ import dotenv from "dotenv";
 //to cache something in git: git rm --cached "the file name"
 // Load values from the .env file.
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Create the Express app.
 const app = express();
@@ -46,12 +52,34 @@ const allowedOrigins = new Set([
 app.use(cors({
   origin: (origin, callback) => {
     // Allow non-browser tools and file:// origin during local development.
-    if (!origin || allowedOrigins.has(origin)) {
+    if (!origin) {
       return callback(null, true);
     }
+
+    // Allow localhost and 127.0.0.1 for local development.
+    if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+      return callback(null, true);
+    }
+
+    // Allow VS Code devtunnels for forwarded access.
+    if (origin.includes("devtunnels.ms")) {
+      return callback(null, true);
+    }
+
+    // Allow other configured origins from env vars.
+    if (allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+
     return callback(new Error("Not allowed by CORS"));
   }
 }));
+
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "front-end", "guest-home.html"));
+});
+
+app.use(express.static(path.join(__dirname, "front-end")));
 
 // Register API route groups.
 app.use("/api/auth", authRoutes);
