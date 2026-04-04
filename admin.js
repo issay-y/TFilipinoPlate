@@ -366,7 +366,7 @@ function attachEvents() {
     document.getElementById("refresh-logs").addEventListener("click", refreshLogs);
 
     document.getElementById("admin-user-view").addEventListener("click", () => {
-        window.location.href = "/user-home.html";
+        window.location.href = "user-home.html";
     });
 
     document.getElementById("admin-logout").addEventListener("click", () => {
