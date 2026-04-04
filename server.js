@@ -104,6 +104,14 @@ async function startServer() {
 
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
+    console.log(`
+╔════════════════════════════════════════╗
+║   The Filipino Plate - TFP             ║
+║   By Sir-Hasn                          ║
+║   Version: 1.0.0                       ║
+║   License: GPL-3.0                     ║                       
+╚════════════════════════════════════════╝
+`);
   });
 }
 
