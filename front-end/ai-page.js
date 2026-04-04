@@ -1,4 +1,4 @@
-const API_BASE_URL = window.location.protocol === "file:"
+const AI_API_BASE_URL = window.location.protocol === "file:"
     ? "http://localhost:3000/api"
     : `${window.location.origin}/api`;
 
@@ -326,7 +326,7 @@ async function fetchSuggestion(payload) {
         throw new Error("Please sign in to use the AI Kitchen Assistant.");
     }
 
-    const response = await fetch(`${API_BASE_URL}/ai/suggest`, {
+    const response = await fetch(`${AI_API_BASE_URL}/ai/suggest`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
