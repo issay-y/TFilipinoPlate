@@ -79,6 +79,22 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "front-end", "guest-home.html"));
 });
 
+app.get("/admin", (req, res) => {
+  res.redirect("/admin.html");
+});
+
+app.get("/admin.html", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.html"));
+});
+
+app.get("/admin.js", (req, res) => {
+  res.sendFile(path.join(__dirname, "admin.js"));
+});
+
+app.get("/admin.css", (req, res) => {
+  res.sendFile(path.join(__dirname, "style.css"));
+});
+
 app.use(express.static(path.join(__dirname, "front-end")));
 
 // Register API route groups.
