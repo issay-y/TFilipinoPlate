@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Bookmarks - THE FILIPINO PLATE</title>
+  <link rel="icon" type="image/jpg" href="/images/favicon.png">
+  <link rel="stylesheet" href="bookmark.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+  
+<body>
+  <div class="page-wrapper">
+    <header class="header">
+      <div class="nav-left">
+        <a href="user-home.html" class="nav-item">Home</a>
+        <a href="about.html" class="nav-item">About</a>
+        <a href="recipe-main-page.html" class="nav-item">Recipes</a>
+      </div>
+      <div class="logo-text">THE FILIPINO PLATE</div>
+      <div class="nav-right">
+        <a href="ai-page.html" class="icon-btn" title="AI Kitchen Assistant">
+          <i class="fas fa-robot"></i>
+        </a>
+        <a href="userprofile.html" class="icon-btn" title="My Profile">
+          <i class="fas fa-user-circle"></i>
+        </a>
+      </div>
+    </header>
+
+    <main class="bookmark-section">
+      <h1>My Bookmarked Recipes</h1>
+      <p id="bookmark-status" class="status-message" aria-live="polite"></p>
+      <div class="bookmark-grid"></div>
+      <div class="empty-state" hidden>
+        <p>You haven’t saved any recipes yet. Start exploring and bookmark your favorites!</p>
+      </div>
+
+      <div id="recipe-detail-modal" class="modal hidden" aria-hidden="true">
+        <div class="modal-content recipe-detail-content">
+          <button type="button" class="close" id="close-recipe-modal" aria-label="Close">&times;</button>
+          <h2 id="recipe-detail-title">Recipe</h2>
+          <p id="recipe-detail-source" class="source-pill"></p>
+          <p id="recipe-detail-description"></p>
+          <h3>Ingredients</h3>
+          <ul id="recipe-detail-ingredients"></ul>
+          <h3>Instructions</h3>
+          <ol id="recipe-detail-steps" class="recipe-steps"></ol>
+          <a id="recipe-detail-link" class="button-link hidden" href="#" target="_blank" rel="noopener noreferrer">Open full recipe source</a>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-brand">THE FILIPINO PLATE</div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 THE FILIPINO PLATE. ALL RIGHTS RESERVED.</p>
+      </div>
+    </footer>
+  </div>
+  <script src="bookmark.js"></script>
+</body>
+</html>

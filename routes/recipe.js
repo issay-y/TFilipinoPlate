@@ -53,6 +53,106 @@ function escapeRegex(value) {
 	return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function parseTimeToMinutes(value) {
+	const text = String(value || "").trim().toLowerCase();
+	if (!text) {
+		return null;
+	}
+
+	const rangeMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:-|to)\s*(\d+(?:\.\d+)?)\s*(hours?|hrs?|minutes?|mins?)/i);
+	if (rangeMatch) {
+		const upperBound = Number.parseFloat(rangeMatch[2]);
+		if (Number.isNaN(upperBound)) {
+			return null;
+		}
+
+		if (rangeMatch[3].startsWith("hour")) {
+			return Math.round(upperBound * 60);
+		}
+
+		return Math.round(upperBound);
+	}
+
+	const hourMinuteMatch = text.match(/(?:(\d+)\s*hours?)?\s*(?:(\d+)\s*minutes?)?/i);
+	if (hourMinuteMatch && (hourMinuteMatch[1] || hourMinuteMatch[2])) {
+		const hours = Number.parseInt(hourMinuteMatch[1] || "0", 10);
+		const minutes = Number.parseInt(hourMinuteMatch[2] || "0", 10);
+		return (Number.isNaN(hours) ? 0 : hours * 60) + (Number.isNaN(minutes) ? 0 : minutes);
+	}
+
+	const numericMatch = text.match(/(\d+(?:\.\d+)?)/);
+	if (!numericMatch) {
+		return null;
+	}
+
+	const amount = Number.parseFloat(numericMatch[1]);
+	if (Number.isNaN(amount)) {
+		return null;
+	}
+
+	if (text.includes("hour")) {
+		return Math.round(amount * 60);
+	}
+
+	return Math.round(amount);
+}
+
+function stripHtml(value) {
+	return String(value || "")
+		.replace(/<[^>]*>/g, " ")
+		.replace(/&[a-z]+;/gi, " ")
+		.replace(/&#x[0-9a-f]+;/gi, " ")
+		.replace(/&#\d+;/g, " ")
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+function extractCookingTimeFromWprmHtml(html) {
+	const content = String(html || "");
+	if (!content) {
+		return null;
+	}
+
+	const hourMatch = content.match(/class="[^"]*wprm-recipe-total_time-hours[^"]*"[^>]*>\s*(\d+(?:\.\d+)?)/i);
+	const minuteMatch = content.match(/class="[^"]*wprm-recipe-total_time-minutes[^"]*"[^>]*>\s*(\d+(?:\.\d+)?)/i);
+
+	if (hourMatch || minuteMatch) {
+		const hours = Number.parseFloat(hourMatch?.[1] || "0");
+		const minutes = Number.parseFloat(minuteMatch?.[1] || "0");
+		const safeHours = Number.isNaN(hours) ? 0 : hours;
+		const safeMinutes = Number.isNaN(minutes) ? 0 : minutes;
+		return Math.round(safeHours * 60 + safeMinutes);
+	}
+
+	return null;
+}
+
+function extractCookingTimeFromText(value) {
+	const text = stripHtml(value).toLowerCase();
+	if (!text) {
+		return null;
+	}
+
+	const patterns = [
+		/(?:takes?|take|ready in|done in|finished in|under|within)\s+(?:about\s+|around\s+|approximately\s+|roughly\s+|less than\s+)?(\d+(?:\.\d+)?\s*(?:hours?|hrs?|minutes?|mins?))/i,
+		/(\d+(?:\.\d+)?\s*(?:hours?|hrs?)\s*(?:and\s*)?(?:\d+(?:\.\d+)?\s*(?:minutes?|mins?))?)/i,
+		/(\d+(?:\.\d+)?\s*(?:-|to)\s*(?:\d+(?:\.\d+)?\s*)?(?:hours?|hrs?|minutes?|mins?))/i,
+		/(\d+(?:\.\d+)?\s*(?:minutes?|mins?|hours?|hrs?))\s*(?:from start to finish|to prepare|total|to cook)/i
+	];
+
+	for (const pattern of patterns) {
+		const match = text.match(pattern);
+		if (match?.[1]) {
+			const parsed = parseTimeToMinutes(match[1]);
+			if (parsed !== null) {
+				return parsed;
+			}
+		}
+	}
+
+	return null;
+}
+
 function buildExpandedTerms(query) {
 	const normalized = normalizeQuery(query);
 	const baseTerms = buildQueryTerms(query);
@@ -228,7 +328,7 @@ async function fetchFromPanlasangPinoy(searchTerm, page = 1, perPage = 20) {
 				search: searchTerm,
 				per_page: perPage,
 				page,
-				_fields: "id,title,excerpt,link,featured_media,content"
+				_fields: "id,title,excerpt,link,featured_media,content,recipe_total_time,meta"
 			},
 			timeout: 10000
 		});
@@ -291,6 +391,27 @@ async function fetchFeaturedImage(mediaId) {
 		}
 		return null;
 	} catch (error) {
+		return null;
+	}
+}
+
+async function fetchCookingTimeFromRecipePage(recipeLink) {
+	if (!recipeLink) {
+		return null;
+	}
+
+	try {
+		const response = await axios.get(recipeLink, {
+			timeout: 7000,
+			validateStatus: () => true
+		});
+
+		if (response.status !== 200 || !response.data) {
+			return null;
+		}
+
+		return extractCookingTimeFromWprmHtml(String(response.data));
+	} catch (_error) {
 		return null;
 	}
 }
@@ -360,14 +481,14 @@ function extractIngredientsAndInstructions(htmlContent) {
 		}
 		
 		// Extract cooking time from HTML (e.g., "Prep Time: 20 minutes", "Cook Time: 1 hour")
-		let cookingTime = null;
-		const timeMatch = html.match(/(?:prep\s+time|cook(?:ing)?\s+time|time)[\s:]*(\d+)\s*(?:minutes?|mins?|hour?)/i);
-		if (timeMatch) {
-			cookingTime = Number.parseInt(timeMatch[1], 10);
-			// If it's hours, convert to minutes
-			if (html.match(/(?:prep\s+time|cook(?:ing)?\s+time|time)[\s:]*\d+\s*hours?/i)) {
-				cookingTime = cookingTime * 60;
-			}
+		let cookingTime = extractCookingTimeFromWprmHtml(html);
+
+		const introText = [
+			stripHtml(html.match(/<p[^>]*>([\s\S]*?)<\/p>/i)?.[1] || ""),
+			stripHtml(html.slice(0, 1200))
+		].join(" ");
+		if (cookingTime === null) {
+			cookingTime = extractCookingTimeFromText(introText);
 		}
 		
 		return { ingredients, instructions, cookingTime };
@@ -391,14 +512,24 @@ function mapPanlasangPinoyRecipe(item, imageUrl = null, recipeData = {}) {
 	
 	// Extract cooking time from recipe data or HTML
 	let cookingTime = null;
+	const directRecipeTime = item?.recipe_total_time ?? item?.meta?.recipe_total_time ?? item?.meta?.["recipe-total_time"];
+	if (directRecipeTime !== undefined && directRecipeTime !== null && String(directRecipeTime).trim().length > 0) {
+		cookingTime = parseTimeToMinutes(directRecipeTime);
+	}
 	if (recipeData?.cookingTime) {
 		cookingTime = recipeData.cookingTime;
 	} else {
-		// Try to find cooking time in HTML (e.g., "20 minutes", "1 hour 30 minutes")
 		const htmlContent = item?.content?.rendered || item?.content || "";
-		const timeMatch = htmlContent.match(/(?:prep\s+time|cook(?:ing)?\s+time|time)[\s:]*(\d+)\s*(?:minutes?|mins?|hour?)/i);
-		if (timeMatch) {
-			cookingTime = Number.parseInt(timeMatch[1], 10);
+		if (cookingTime === null) {
+			cookingTime = extractCookingTimeFromWprmHtml(htmlContent);
+		}
+		const introText = [
+			item?.excerpt?.rendered || item?.excerpt || "",
+			stripHtml(htmlContent.match(/<p[^>]*>([\s\S]*?)<\/p>/i)?.[1] || ""),
+			stripHtml(htmlContent.slice(0, 1200))
+		].join(" ");
+		if (cookingTime === null) {
+			cookingTime = extractCookingTimeFromText(introText);
 		}
 	}
 	
@@ -454,6 +585,28 @@ router.get(
 		totalResults = mergedRecipes.length;
 		displayQuery = q || "all";
 		recipes = mergedRecipes.slice((page - 1) * num, page * num);
+
+		recipes = await Promise.all(
+			recipes.map(async (recipe) => {
+				if (recipe?.cooking_time !== null && recipe?.cooking_time !== undefined) {
+					return recipe;
+				}
+
+				if (!recipe?.link) {
+					return recipe;
+				}
+
+				const pageCookingTime = await fetchCookingTimeFromRecipePage(recipe.link);
+				if (pageCookingTime === null || pageCookingTime === undefined) {
+					return recipe;
+				}
+
+				return {
+					...recipe,
+					cooking_time: pageCookingTime
+				};
+			})
+		);
 
 		return res.json({
 			query: displayQuery,

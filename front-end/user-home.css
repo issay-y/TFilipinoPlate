@@ -130,6 +130,14 @@ body {
     display: block;
 }
 
+.header-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
 .logo {
     flex: 0 0 auto;
 }

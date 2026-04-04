@@ -148,6 +148,78 @@ async function hasValidUserSession() {
     }
 }
 
+async function fetchUserProfile() {
+    const token = getAuthToken();
+    if (!token) {
+        return null;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/user/profile`, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.message || "Failed to load user profile");
+    }
+
+    return data && data.user ? data.user : null;
+}
+
+function setHeaderProfileAvatar(link, avatarUrl) {
+    if (!link || !avatarUrl) {
+        return;
+    }
+
+    const safeAvatarUrl = String(avatarUrl || "").trim();
+    if (!safeAvatarUrl) {
+        return;
+    }
+
+    const fallbackMarkup = link.innerHTML;
+    const image = new Image();
+
+    image.onload = () => {
+        link.innerHTML = "";
+        const avatar = document.createElement("img");
+        avatar.src = safeAvatarUrl;
+        avatar.alt = "My Profile";
+        avatar.className = "header-avatar";
+        link.appendChild(avatar);
+    };
+
+    image.onerror = () => {
+        link.innerHTML = fallbackMarkup;
+    };
+
+    image.src = safeAvatarUrl;
+}
+
+async function initHeaderProfileAvatar() {
+    const profileLinks = Array.from(document.querySelectorAll("a.profile-link"));
+    if (!profileLinks.length) {
+        return;
+    }
+
+    if (!(await hasValidUserSession())) {
+        return;
+    }
+
+    try {
+        const user = await fetchUserProfile();
+        const avatarUrl = user && user.avatar ? user.avatar : "";
+        if (!avatarUrl) {
+            return;
+        }
+
+        profileLinks.forEach((link) => setHeaderProfileAvatar(link, avatarUrl));
+    } catch (_error) {
+        // Keep default hardcoded icon as fallback when profile fetch fails.
+    }
+}
+
 function normalizeRecipeId(recipe) {
     const rawId = recipe && (recipe.recipe_id || recipe.id || recipe._id);
     if (rawId) {
@@ -182,9 +254,10 @@ function applyRecipeFilters(recipes) {
             }
         }
 
-        // Time filter (check if recipe has cooking_time field and it's within limit)
-        if (timeFilter > 0 && recipe.cooking_time) {
-            if (Number.parseInt(recipe.cooking_time, 10) > timeFilter) {
+        // Time filter (recipes without a known time should not pass when a max limit is set)
+        if (timeFilter > 0) {
+            const recipeTime = Number.parseInt(recipe.cooking_time, 10);
+            if (Number.isNaN(recipeTime) || recipeTime > timeFilter) {
                 return false;
             }
         }
@@ -1061,9 +1134,9 @@ async function initAboutHeaderAuthState() {
     }
 
     authActions.innerHTML = `
-        <button class="icon-btn ai-btn" title="AI Kitchen Assistant" onclick="openModal('aiModal')">
+        <a href="ai-page.html" class="icon-btn ai-btn" title="AI Kitchen Assistant" onclick="openModal('aiModal')">
             <i class="fas fa-robot"></i>
-        </button>
+        </a>
 
         <a href="userprofile.html" class="icon-btn profile-link" title="My Profile">
             <i class="fas fa-user-circle"></i>
@@ -1071,6 +1144,11 @@ async function initAboutHeaderAuthState() {
     `;
 }
 
+async function initHeaderFeatures() {
+    await initAboutHeaderAuthState();
+    await initHeaderProfileAvatar();
+}
+
 initRecipeSearch();
 initGuestAuth();
-initAboutHeaderAuthState();
+initHeaderFeatures();

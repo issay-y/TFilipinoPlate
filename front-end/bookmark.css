@@ -1,0 +1,339 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: 'Poppins', sans-serif;
+  background-color: #ddd9ce;
+  color: #3c2415;
+}
+
+.page-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  padding: 15px 60px;
+  background-color: #3c2415;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.nav-left,
+.nav-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.nav-left {
+  gap: 36px;
+}
+
+.nav-right {
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.logo-text {
+  color: #ddd9ce;
+  font-weight: 800;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  text-align: center;
+  flex: 1;
+}
+
+.nav-item {
+  color: #ddd9ce;
+  text-decoration: none;
+  font-weight: 600;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+}
+
+.nav-item:hover,
+.nav-item.active {
+  opacity: 0.75;
+  border-bottom-color: #ddd9ce;
+}
+
+.icon-btn {
+  background-color: #5c3d2e;
+  color: #ddd9ce;
+  border: 2px solid #5c3d2e;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 1.1rem;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+  transform: translateY(-2px);
+  border-color: #ddd9ce;
+  background: transparent;
+}
+
+.bookmark-section {
+  width: min(1200px, 92vw);
+  margin: 0 auto;
+  padding: 36px 0 60px;
+  flex: 1;
+}
+
+.bookmark-section h1 {
+  margin: 0;
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  font-weight: 800;
+}
+
+.status-message {
+  margin: 14px 0 4px;
+  min-height: 22px;
+  color: #5a4639;
+  font-weight: 600;
+}
+
+.status-message.error {
+  color: #8d2d2d;
+}
+
+.bookmark-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.bookmark-card {
+  background: #f4f1ea;
+  border: 1px solid #cfc6b7;
+  border-radius: 14px;
+  box-shadow: 0 8px 18px rgba(60, 36, 21, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.bookmark-card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  background: #d4ccbe;
+}
+
+.bookmark-body {
+  padding: 14px 14px 16px;
+  display: grid;
+  gap: 8px;
+  flex: 1;
+}
+
+.bookmark-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.source-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin: 0;
+  border-radius: 999px;
+  border: 1px solid #cfc6b7;
+  background: #e8e3d8;
+  color: #5a4639;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+}
+
+.bookmark-description {
+  margin: 0;
+  color: #4f3f35;
+  line-height: 1.5;
+  display: -webkit-box;
+  line-clamp: 3;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.method-chip {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  border: 1px solid #cfc6b7;
+  background: #e8e3d8;
+  color: #5a4639;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.view-details-btn,
+.secondary-btn,
+.button-link,
+.remove-btn {
+  border: none;
+  border-radius: 12px;
+  background: #5c3d2e;
+  color: #fff;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: 0.95rem;
+}
+
+.secondary-btn,
+.button-link.secondary-btn {
+  background: #7a5a46;
+}
+
+.bookmark-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #bcae9d;
+  background: #e8e3d8;
+  color: #7c4d32;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.bookmark-btn:hover {
+  background: #e0d8ca;
+}
+
+.bookmark-btn.is-bookmarked {
+  color: #5c3d2e;
+}
+
+.is-saving {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.remove-btn {
+  background: #8d2d2d;
+}
+
+.remove-btn:hover {
+  background: #6c1f1f;
+}
+
+.empty-state {
+  margin-top: 20px;
+  border: 1px dashed #bfb5a6;
+  border-radius: 12px;
+  background: #eee9dd;
+  padding: 20px;
+  color: #5a4639;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 2000;
+}
+
+.modal-content {
+  width: min(720px, 94vw);
+  max-height: 86vh;
+  overflow-y: auto;
+  background: #f4f1ea;
+  border-radius: 16px;
+  border: 1px solid #cfc6b7;
+  padding: 22px;
+  position: relative;
+}
+
+.close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid #cfc6b7;
+  background: #eee7da;
+  color: #5c3d2e;
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+
+#recipe-detail-ingredients,
+#recipe-detail-steps {
+  margin-top: 8px;
+  padding-left: 22px;
+}
+
+.button-link.hidden {
+  display: none;
+}
+
+.footer {
+  background: #3c2415;
+  color: #ddd9ce;
+  text-align: center;
+  padding: 36px 20px;
+}
+
+.footer-brand {
+  font-weight: 800;
+}
+
+.footer-bottom {
+  font-size: 0.72rem;
+  opacity: 0.6;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    padding: 18px;
+  }
+
+  .nav-left,
+  .nav-right {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}

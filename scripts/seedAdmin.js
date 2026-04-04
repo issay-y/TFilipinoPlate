@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import dotenv from "dotenv";
 import { User } from "../models/user.models.js";
 
+//npm run seed:admin -- to run
 dotenv.config();
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";

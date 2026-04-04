@@ -5,6 +5,7 @@ import { verifyToken } from "../middleware/auth.middleware.js";
 import { validateRequest } from "../middleware/requestValidation.middleware.js";
 import { CookingHistory } from "../models/cookingHistory.models.js";
 import { User } from "../models/user.models.js";
+import { sendPasswordChangedEmail } from "../services/email.services.js";
 
 const router = express.Router();
 
@@ -260,8 +261,27 @@ router.put(
 
       const updatedUser = await user.save();
 
+      let notificationMessage = "";
+      if (hasPassword) {
+        try {
+          const result = await sendPasswordChangedEmail({
+            userEmail: updatedUser.email,
+            userName: updatedUser.full_name || updatedUser.username,
+            changedAt: new Date(),
+            actorEmail: updatedUser.email
+          });
+
+          if (!result.sent) {
+            notificationMessage = " Password updated but email notification is not configured.";
+          }
+        } catch (mailErr) {
+          console.error("Error sending self password-change email:", mailErr.message);
+          notificationMessage = " Password updated but email notification failed to send.";
+        }
+      }
+
       return res.json({
-        message: "Profile updated successfully",
+        message: `Profile updated successfully.${notificationMessage}`,
         user: buildProfileResponse(updatedUser)
       });
     } catch (err) {
