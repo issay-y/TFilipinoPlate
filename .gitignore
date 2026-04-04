@@ -5,3 +5,8 @@ scripts/
 *.pdf
 test-genai.js
 index.html
+
+# MongoDB dumps and local backups
+mongo-backup/
+*.bson
+*.metadata.json
