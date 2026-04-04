@@ -365,6 +365,10 @@ function attachEvents() {
     document.getElementById("refresh-users").addEventListener("click", refreshUsers);
     document.getElementById("refresh-logs").addEventListener("click", refreshLogs);
 
+    document.getElementById("admin-user-view").addEventListener("click", () => {
+        window.location.href = "front-end/user-home.html";
+    });
+
     document.getElementById("admin-logout").addEventListener("click", () => {
         clearToken();
         state.user = null;
