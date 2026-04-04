@@ -350,14 +350,14 @@ See the LICENSE file for full terms.
 
 ## Author & Contact
 
-**Lead Developer**: Sir Hasn ([GitHub](https://github.com/Sir-Hasn))
-**Repository**: [https://github.com/Sir-Hasn/TFP](https://github.com/Sir-Hasn/TFP)
-**Live Site**: [https://tfp-yu16.onrender.com](https://tfp-yu16.onrender.com)
+- **Lead Developer**: ([Sir Hasn](https://github.com/Sir-Hasn))
+- **Repository**: [https://github.com/Sir-Hasn/TFP](https://github.com/Sir-Hasn/TFP)
+- **Live Site**: [https://tfp-yu16.onrender.com](https://tfp-yu16.onrender.com)
 
 ## Contributors
 
-- **ally**: ([GitHub](https://github.com/issay-y))
-- **keybon**: ([GitHub](https://github.com/Johnkeybird-keybon))
+- **ally**: ([ally](https://github.com/issay-y))
+- **keybon**: ([keybon](https://github.com/Johnkeybird-keybon))
 ---
 
 ## Acknowledgments
