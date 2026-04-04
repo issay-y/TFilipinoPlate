@@ -341,22 +341,23 @@ Password: AdminPassword123
 
 ## License
 
-**Copyright © 2026 Sir Hasn - The Filipino Plate**
+This project is licensed under the MIT License.
 
-Licensed under the GNU General Public License v3.0 or later (GPL-3.0-or-later).
-
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-
-**See LICENSE file for full terms.**
+See the LICENSE file for full terms.
 
 ---
 
+
 ## Author & Contact
 
-**Developer**: Sir Hasn
-**Repository**: [https://github.com/Sir-Hasn/TFP](https://github.com/Sir-Hasn/TFP)  
-**Live Site**: [https://tfp-yu16.onrender.com](https://tfp-yu16.onrender.com)  
+**Lead Developer**: Sir Hasn ([GitHub](https://github.com/Sir-Hasn))
+**Repository**: [https://github.com/Sir-Hasn/TFP](https://github.com/Sir-Hasn/TFP)
+**Live Site**: [https://tfp-yu16.onrender.com](https://tfp-yu16.onrender.com)
 
+## Contributors
+
+- **ally**: ([GitHub](https://github.com/issay-y))
+- **keybon**: ([GitHub](https://github.com/Johnkeybird-keybon))
 ---
 
 ## Acknowledgments

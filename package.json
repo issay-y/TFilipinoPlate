@@ -9,8 +9,8 @@
     "test": "node --test tests/*.test.js",
     "seed:admin": "node scripts/seedAdmin.js"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Sir Hasn",
+  "license": "MIT",
   "description": "",
   "dependencies": {
     "@google/genai": "^1.45.0",
