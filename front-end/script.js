@@ -1,4 +1,6 @@
-const API_BASE_URL = "http://localhost:3000/api";
+const API_BASE_URL = window.location.protocol === "file:"
+    ? "http://localhost:3000/api"
+    : `${window.location.origin}/api`;
 
 
 //Signup and Login are included in guest-home html since they are only relevant to guests.
