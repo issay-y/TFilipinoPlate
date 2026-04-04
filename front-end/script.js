@@ -150,6 +150,40 @@ async function hasValidUserSession() {
     }
 }
 
+async function redirectAuthenticatedUserFromGuestLanding() {
+    const pathName = String(window.location.pathname || "").toLowerCase();
+    const isGuestLandingRoute = pathName === "/" || pathName.endsWith("/guest-home.html");
+
+    if (!isGuestLandingRoute) {
+        return;
+    }
+
+    const token = getAuthToken();
+    if (!token) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/me`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            localStorage.removeItem("token");
+            return;
+        }
+
+        const data = await response.json().catch(() => ({}));
+        const role = String(data?.user?.role || "").toLowerCase();
+        const nextPath = role === "admin" ? "../admin.html" : "user-home.html";
+        window.location.replace(nextPath);
+    } catch (_error) {
+        // Keep user on guest landing when session validation is temporarily unavailable.
+    }
+}
+
 async function fetchUserProfile() {
     const token = getAuthToken();
     if (!token) {
@@ -1178,4 +1212,5 @@ async function initHeaderFeatures() {
 
 initRecipeSearch();
 initGuestAuth();
+redirectAuthenticatedUserFromGuestLanding();
 initHeaderFeatures();
