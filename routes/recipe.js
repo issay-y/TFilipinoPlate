@@ -49,6 +49,25 @@ function buildQueryTerms(query) {
 		.filter((term) => term.length >= 2);
 }
 
+function isMeaningfulSearchQuery(query) {
+	const text = String(query || "").trim();
+	if (!text) {
+		return true;
+	}
+
+	// Allow letters, spaces, apostrophes, and hyphens only.
+	if (!/^[a-zA-Z\s'\-]+$/.test(text)) {
+		return false;
+	}
+
+	const letterCount = (text.match(/[a-zA-Z]/g) || []).length;
+	if (letterCount < 3) {
+		return false;
+	}
+
+	return /[a-zA-Z]{2,}/.test(text);
+}
+
 function escapeRegex(value) {
 	return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -560,6 +579,18 @@ router.get(
 	const q = String(req.query.q || "").trim();
 	const num = clampNumber(req.query.num, 1, 100, 10);
 	const page = clampNumber(req.query.page, 1, 100, 1);
+
+	if (q && !isMeaningfulSearchQuery(q)) {
+		return res.json({
+			query: q,
+			count: 0,
+			page,
+			pageSize: num,
+			totalResults: 0,
+			recipes: []
+		});
+	}
+
 	const normalizedQuery = normalizeQuery(q);
 	const expandedTerms = buildExpandedTerms(normalizedQuery || q);
 

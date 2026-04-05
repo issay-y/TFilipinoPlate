@@ -13,6 +13,12 @@ dotenv.config();
 
 const router = express.Router();
 
+const AI_RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
+const AI_RATE_LIMIT_MAX_REQUESTS = 10;
+const MAX_INGREDIENT_INPUT_CHARS = 320;
+const MAX_INGREDIENT_ITEMS = 40;
+const aiRequestLogByKey = new Map();
+
 function normalizeText(value) {
   return String(value ?? "").trim().replace(/\s+/g, " ");
 }
@@ -22,6 +28,107 @@ function parseIngredientList(value) {
     .split(/[,\n;]/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function getAiRateLimitKey(req) {
+  const userId = req?.user?._id ? String(req.user._id) : "";
+  if (userId) {
+    return `user:${userId}`;
+  }
+
+  return `ip:${String(req.ip || "unknown")}`;
+}
+
+function canProceedWithAiRequest(limitKey) {
+  const now = Date.now();
+  const cutoff = now - AI_RATE_LIMIT_WINDOW_MS;
+  const requestTimes = (aiRequestLogByKey.get(limitKey) || []).filter((ts) => ts > cutoff);
+
+  if (requestTimes.length >= AI_RATE_LIMIT_MAX_REQUESTS) {
+    aiRequestLogByKey.set(limitKey, requestTimes);
+    return false;
+  }
+
+  requestTimes.push(now);
+  aiRequestLogByKey.set(limitKey, requestTimes);
+  return true;
+}
+
+function containsPromptInjectionIndicators(value) {
+  const text = String(value || "").toLowerCase();
+  const patterns = [
+    /ignore\s+(all\s+)?(previous|prior)\s+instructions?/i,
+    /ignore\s+the\s+above\s+instructions?/i,
+    /system\s+prompt/i,
+    /developer\s+mode/i,
+    /jailbreak/i,
+    /act\s+as\s+/i,
+    /reveal\s+(your\s+)?prompt/i,
+    /bypass\s+(rules|safety|guardrails)/i
+  ];
+
+  return patterns.some((pattern) => pattern.test(text));
+}
+
+function validateIngredientsInput(rawInput) {
+  const text = String(rawInput || "").trim();
+  if (!text) {
+    return { valid: false, message: "Please provide at least one ingredient." };
+  }
+
+  if (text.length > MAX_INGREDIENT_INPUT_CHARS) {
+    return { valid: false, message: "Ingredient input is too long. Please keep it brief and ingredient-focused." };
+  }
+
+  if (containsPromptInjectionIndicators(text)) {
+    return {
+      valid: false,
+      message: "Sorry, your ingredient input seems invalid. Please enter ingredients like: chicken, garlic, onion."
+    };
+  }
+
+  // Allow common ingredient notation: letters/numbers/spaces and separators.
+  if (!/^[a-zA-Z0-9\s,.'\-\/()&]+$/.test(text)) {
+    return {
+      valid: false,
+      message: "Sorry, your ingredient input seems invalid. Please enter ingredients like: chicken, garlic, onion."
+    };
+  }
+
+  const letterCount = (text.match(/[a-zA-Z]/g) || []).length;
+  if (letterCount < 3 || !/[a-zA-Z]{2,}/.test(text)) {
+    return {
+      valid: false,
+      message: "Sorry, your ingredient input seems invalid. Please enter ingredients like: chicken, garlic, onion."
+    };
+  }
+
+  const items = parseIngredientList(text);
+  if (items.length === 0) {
+    return { valid: false, message: "Please provide at least one ingredient." };
+  }
+
+  if (items.length > MAX_INGREDIENT_ITEMS) {
+    return {
+      valid: false,
+      message: "Too many ingredients provided. Please keep the list shorter."
+    };
+  }
+
+  return {
+    valid: true,
+    normalizedText: text,
+    ingredients: items
+  };
+}
+
+function hasRequiredRecipeSections(text) {
+  const content = String(text || "");
+  return /recipe\s*name\s*:/i.test(content)
+    && /main\s*ingredients\s*:/i.test(content)
+    && /steps\s*:/i.test(content)
+    && /time\s*estimate\s*:/i.test(content)
+    && /tip\s*:/i.test(content);
 }
 
 function formatTimePreference(value) {
@@ -71,6 +178,19 @@ function sanitizeAiSuggestion(rawText, options = {}) {
 
 router.post("/suggest", verifyToken, async (req, res) => {
   console.log("GEMINI_API_KEY from env:", process.env.GEMINI_API_KEY ? "Found" : "NOT FOUND");
+
+  const rateLimitKey = getAiRateLimitKey(req);
+  if (!canProceedWithAiRequest(rateLimitKey)) {
+    return res.status(429).json({
+      message: "Too many AI requests. Please wait a few minutes and try again."
+    });
+  }
+
+  const inputValidation = validateIngredientsInput(req.body?.ingredients);
+  if (!inputValidation.valid) {
+    return res.status(400).json({ message: inputValidation.message });
+  }
+
   const ai = new GoogleGenAI({ 
     apiKey: process.env.GEMINI_API_KEY 
   });
@@ -79,7 +199,7 @@ router.post("/suggest", verifyToken, async (req, res) => {
     const cookingHistory = await CookingHistory.find({ user_id: req.user._id })
       .sort({ cooked_at: -1 })
       .select("recipe_name cooked_at");
-    const requestedIngredients = parseIngredientList(req.body?.ingredients);
+    const requestedIngredients = inputValidation.ingredients;
     const timePreference = formatTimePreference(req.body?.time);
     const useSavedAllergens = req.body?.useSavedAllergens !== false && req.body?.useSavedAllergens !== "false";
 
@@ -135,6 +255,12 @@ router.post("/suggest", verifyToken, async (req, res) => {
       useSavedAllergens,
       allergens
     });
+
+    if (!hasRequiredRecipeSections(suggestion)) {
+      return res.status(502).json({
+        message: "We could not generate a complete recipe right now. Please try again."
+      });
+    }
 
     return res.json({
       suggestion,

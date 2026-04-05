@@ -358,6 +358,61 @@ function getTimeLabel(value) {
     }
 }
 
+function containsPromptInjectionIndicators(value) {
+    const text = String(value || "").toLowerCase();
+    const patterns = [
+        /ignore\s+(all\s+)?(previous|prior)\s+instructions?/i,
+        /ignore\s+the\s+above\s+instructions?/i,
+        /system\s+prompt/i,
+        /developer\s+mode/i,
+        /jailbreak/i,
+        /act\s+as\s+/i,
+        /reveal\s+(your\s+)?prompt/i,
+        /bypass\s+(rules|safety|guardrails)/i
+    ];
+
+    return patterns.some((pattern) => pattern.test(text));
+}
+
+function validateIngredientsInput(value) {
+    const text = String(value || "").trim();
+    if (!text) {
+        return "Add at least one ingredient before generating a recipe.";
+    }
+
+    if (text.length > 320) {
+        return "Please keep your ingredient list shorter and focused.";
+    }
+
+    if (containsPromptInjectionIndicators(text)) {
+        return "Sorry, your ingredient input seems invalid. Please enter ingredients like: chicken, garlic, onion.";
+    }
+
+    if (!/^[a-zA-Z0-9\s,.'\-\/()&]+$/.test(text)) {
+        return "Sorry, your ingredient input seems invalid. Please enter ingredients like: chicken, garlic, onion.";
+    }
+
+    const letterCount = (text.match(/[a-zA-Z]/g) || []).length;
+    if (letterCount < 3 || !/[a-zA-Z]{2,}/.test(text)) {
+        return "Sorry, your ingredient input seems invalid. Please enter ingredients like: chicken, garlic, onion.";
+    }
+
+    const items = text
+        .split(/[,\n;]/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    if (items.length === 0) {
+        return "Add at least one ingredient before generating a recipe.";
+    }
+
+    if (items.length > 40) {
+        return "Too many ingredients provided. Please shorten your list.";
+    }
+
+    return "";
+}
+
 function initializeAiPage() {
     const form = document.getElementById("ai-form");
     const ingredientsInput = document.getElementById("ingredients");
@@ -374,8 +429,9 @@ function initializeAiPage() {
         event.preventDefault();
 
         const ingredients = ingredientsInput.value.trim();
-        if (!ingredients) {
-            renderErrorState("Add at least one ingredient before generating a recipe.");
+        const validationError = validateIngredientsInput(ingredients);
+        if (validationError) {
+            renderErrorState(validationError);
             return;
         }
 
