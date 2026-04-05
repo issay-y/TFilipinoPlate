@@ -1,4 +1,4 @@
-const RESEND_API_URL = "https://api.resend.com/emails";
+import sgMail from "@sendgrid/mail";
 
 function isValidEmail(value) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
@@ -21,8 +21,8 @@ function maskEmail(value) {
     return `${maskedLocal}@${domain}`;
 }
 
-function getResendConfig() {
-    const apiKey = String(process.env.RESEND_API_KEY || "").trim();
+function getSendGridConfig() {
+    const apiKey = String(process.env.SENDGRID_API_KEY || "").trim();
     const from = String(process.env.EMAIL_FROM || "").trim();
     const replyTo = String(process.env.EMAIL_REPLY_TO || "").trim();
 
@@ -33,55 +33,31 @@ function getResendConfig() {
     return { apiKey, from, replyTo };
 }
 
-async function sendWithResend({ to, subject, text, html }) {
-    const config = getResendConfig();
+async function sendWithSendGrid({ to, subject, text, html }) {
+    const config = getSendGridConfig();
     if (!config) {
-        console.warn("Email service: Resend not configured - missing RESEND_API_KEY or EMAIL_FROM");
-        return { sent: false, reason: "Resend is not configured" };
+        console.warn("Email service: SendGrid not configured - missing SENDGRID_API_KEY or EMAIL_FROM");
+        return { sent: false, reason: "SendGrid is not configured" };
     }
 
-    const payload = {
-        from: config.from,
-        to: [to],
-        subject,
-        text,
-        html
-    };
-
-    if (config.replyTo) {
-        payload.reply_to = config.replyTo;
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
+    sgMail.setApiKey(config.apiKey);
 
     try {
-        const response = await fetch(RESEND_API_URL, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${config.apiKey}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(payload),
-            signal: controller.signal
+        await sgMail.send({
+            to,
+            from: config.from,
+            subject,
+            text,
+            html,
+            ...(config.replyTo ? { replyTo: config.replyTo } : {})
         });
 
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            return {
-                sent: false,
-                reason: data?.message || data?.error || `Resend HTTP ${response.status}`
-            };
-        }
-
-        return { sent: true, id: data?.id || "" };
+        return { sent: true };
     } catch (error) {
-        if (error?.name === "AbortError") {
-            return { sent: false, reason: "Resend request timed out" };
-        }
-        return { sent: false, reason: error?.message || "Resend request failed" };
-    } finally {
-        clearTimeout(timeout);
+        const message = Array.isArray(error?.response?.body?.errors)
+            ? error.response.body.errors.map((item) => item.message).filter(Boolean).join("; ")
+            : error?.message || "SendGrid request failed";
+        return { sent: false, reason: message };
     }
 }
 
@@ -116,7 +92,7 @@ export async function sendPasswordChangedEmail({ userEmail, userName, changedAt,
         <p>If this wasn't you, please contact the admin immediately.</p>
     `;
 
-    const result = await sendWithResend({
+    const result = await sendWithSendGrid({
         to: recipient,
         subject: "Is this you? Password changed",
         text,
@@ -169,7 +145,7 @@ export async function sendPasswordResetCodeEmail({ userEmail, userName, code, ex
     `;
 
     console.log(`Email service: Attempting to send reset code email to ${maskedRecipient}`);
-    const result = await sendWithResend({
+    const result = await sendWithSendGrid({
         to: recipient,
         subject: "Your password reset code",
         text,
