@@ -33,6 +33,21 @@ function getSendGridConfig() {
     return { apiKey, from, replyTo };
 }
 
+function formatEmailTimestamp(value) {
+    const timestamp = value instanceof Date ? value : new Date(value || Date.now());
+
+    try {
+        return new Intl.DateTimeFormat("en-PH", {
+            dateStyle: "medium",
+            timeStyle: "short",
+            hour12: true,
+            timeZone: process.env.EMAIL_TIME_ZONE || "Asia/Manila"
+        }).format(timestamp);
+    } catch {
+        return timestamp.toLocaleString("en-PH");
+    }
+}
+
 async function sendWithSendGrid({ to, subject, text, html }) {
     const config = getSendGridConfig();
     if (!config) {
@@ -70,7 +85,7 @@ export async function sendPasswordChangedEmail({ userEmail, userName, changedAt,
     }
 
     const safeName = String(userName || "User").trim() || "User";
-    const changedTime = (changedAt instanceof Date ? changedAt : new Date(changedAt || Date.now())).toLocaleString();
+    const changedTime = formatEmailTimestamp(changedAt);
     const changedBy = String(actorEmail || "an administrator").trim();
 
     console.log(`Email service: Attempting to send password change email to ${maskedRecipient}`);
