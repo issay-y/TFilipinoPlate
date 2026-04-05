@@ -303,6 +303,46 @@ body {
     text-align: left;
 }
 
+.hidden {
+    display: none !important;
+}
+
+.forgot-reset-panel {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(60, 36, 21, 0.2);
+    text-align: left;
+}
+
+.forgot-step-text {
+    margin-bottom: 14px;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: #3c2415;
+    opacity: 0.9;
+}
+
+.forgot-reset-panel .auth-btn {
+    margin-top: 4px;
+}
+
+.forgot-inline-actions {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.forgot-inline-actions a {
+    text-decoration: underline;
+}
+
+.forgot-separator {
+    opacity: 0.5;
+}
+
 .modal-content h2, 
 .modal-content p, 
 .modal-content input, 

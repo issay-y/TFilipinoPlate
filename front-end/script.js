@@ -125,6 +125,127 @@ let latestRenderedRecipes = [];
 let latestAllRecipes = [];
 let bookmarkedRecipeIds = new Set();
 let bookmarkIdByRecipeId = new Map();
+let forgotPasswordEmail = "";
+
+function getForgotModalElements() {
+    return {
+        modal: document.getElementById("forgotModal"),
+        emailInput: document.getElementById("forgot-email"),
+        resetPanel: document.getElementById("forgot-reset-panel"),
+        forgotForm: document.getElementById("forgot-form"),
+        resetForm: document.getElementById("reset-form"),
+        codeInput: document.getElementById("reset-code"),
+        passwordInput: document.getElementById("reset-new-password")
+    };
+}
+
+function resetForgotPasswordModalState() {
+    const { emailInput, resetPanel, forgotForm, resetForm, codeInput, passwordInput } = getForgotModalElements();
+
+    forgotPasswordEmail = "";
+
+    if (emailInput) {
+        emailInput.readOnly = false;
+        emailInput.value = "";
+    }
+
+    if (forgotForm) {
+        forgotForm.classList.remove("hidden");
+    }
+
+    if (resetPanel) {
+        resetPanel.classList.add("hidden");
+    }
+
+    if (resetForm) {
+        resetForm.reset();
+    }
+
+    if (codeInput) {
+        codeInput.value = "";
+    }
+
+    if (passwordInput) {
+        passwordInput.value = "";
+    }
+}
+
+function showForgotResetStep(email) {
+    const { emailInput, resetPanel, forgotForm, codeInput, passwordInput } = getForgotModalElements();
+
+    forgotPasswordEmail = String(email || "").trim();
+
+    if (emailInput) {
+        emailInput.value = forgotPasswordEmail;
+        emailInput.readOnly = true;
+    }
+
+    if (forgotForm) {
+        forgotForm.classList.add("hidden");
+    }
+
+    if (codeInput) {
+        codeInput.value = "";
+    }
+
+    if (passwordInput) {
+        passwordInput.value = "";
+    }
+
+    if (resetPanel) {
+        resetPanel.classList.remove("hidden");
+    }
+
+    if (codeInput) {
+        codeInput.focus();
+    } else if (passwordInput) {
+        passwordInput.focus();
+    }
+}
+
+function returnToForgotEmailStep() {
+    const { forgotForm, resetPanel, emailInput, resetForm } = getForgotModalElements();
+
+    if (resetPanel) {
+        resetPanel.classList.add("hidden");
+    }
+
+    if (resetForm) {
+        resetForm.reset();
+    }
+
+    if (forgotForm) {
+        forgotForm.classList.remove("hidden");
+    }
+
+    if (emailInput) {
+        emailInput.readOnly = false;
+        emailInput.focus();
+    }
+
+    setAuthMessage("Enter your email again if you want to send a new code.", false);
+}
+
+async function resendForgotCode() {
+    const { emailInput } = getForgotModalElements();
+    const email = String(emailInput?.value || forgotPasswordEmail || "").trim();
+
+    if (!isValidEmail(email)) {
+        setAuthMessage("Please check your email address and try again.");
+        return;
+    }
+
+    setAuthMessage("Resending reset code...", false);
+
+    try {
+        const data = await requestPasswordResetCode(email);
+        forgotPasswordEmail = email;
+        setAuthMessage(data.message || "If an account exists, a new reset code has been sent to your email.", false);
+        showForgotResetStep(email);
+    } catch (error) {
+        setAuthMessage(toFriendlyAuthError(error, "Could not resend reset code right now. Please try again."));
+    }
+}
 
 function getAuthToken() {
     return localStorage.getItem("token") || "";
@@ -1071,6 +1192,18 @@ function toFriendlyAuthError(error, fallbackMessage) {
         return "Please use a stronger password with uppercase, lowercase, and a number.";
     }
 
+    if (rawMessage.includes("reset code expired") || rawMessage.includes("invalid or expired reset code")) {
+        return "The reset code is invalid or expired. Request a new code and try again.";
+    }
+
+    if (rawMessage.includes("too many incorrect attempts")) {
+        return "You have tried the wrong code too many times. Request a new reset code and try again.";
+    }
+
+    if (rawMessage.includes("please request a new reset code")) {
+        return "Your reset code is no longer usable. Request a new one and try again.";
+    }
+
     // Default behavior: show backend message directly.
     return serverMessage;
 }
@@ -1186,7 +1319,8 @@ async function handleForgotPasswordSubmit(event) {
 
     try {
         const data = await requestPasswordResetCode(email);
-        setAuthMessage(data.message || "If an account exists, a reset code has been sent.", false);
+        setAuthMessage(data.message || "If an account exists, a 6-digit reset code has been sent.", false);
+        showForgotResetStep(email);
     } catch (error) {
         setAuthMessage(toFriendlyAuthError(error, "Could not send reset code right now. Please try again."));
     } finally {
@@ -1206,7 +1340,7 @@ async function handleResetPasswordSubmit(event) {
     const emailInput = document.getElementById("forgot-email");
     const codeInput = document.getElementById("reset-code");
     const passwordInput = document.getElementById("reset-new-password");
-    const email = emailInput ? emailInput.value.trim() : "";
+    const email = emailInput ? emailInput.value.trim() : forgotPasswordEmail;
     const code = codeInput ? codeInput.value.trim() : "";
     const newPassword = passwordInput ? passwordInput.value : "";
 
@@ -1233,6 +1367,7 @@ async function handleResetPasswordSubmit(event) {
         const data = await resetPasswordWithCode(email, code, newPassword);
         setAuthMessage(data.message || "Password reset successful. You can now log in.", false);
         setTimeout(() => {
+            resetForgotPasswordModalState();
             switchModal("forgotModal", "loginModal");
         }, 1200);
     } catch (error) {
@@ -1256,6 +1391,10 @@ function closeModal(id) {
     const element = document.getElementById(id);
     if (element) {
         element.style.display = "none";
+    }
+
+    if (id === "forgotModal") {
+        resetForgotPasswordModalState();
     }
 }
 
