@@ -1045,6 +1045,9 @@ async function handleLoginSubmit(event) {
 
     if (validationError) {
         setAuthMessage(validationError);
+        if (submitButton) {
+            submitButton.disabled = false;
+        }
         return;
     }
 
@@ -1091,6 +1094,9 @@ async function handleSignupSubmit(event) {
 
     if (validationError) {
         setAuthMessage(validationError);
+        if (submitButton) {
+            submitButton.disabled = false;
+        }
         return;
     }
 
