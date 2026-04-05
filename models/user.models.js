@@ -9,6 +9,10 @@ const User = mongoose.model("User", new mongoose.Schema({
         role: { type: String, enum: ["user", "admin"], default: "user" },
         status: { type: String, enum: ["active", "suspended"], default: "active" },
         allergens: [String],
+        password_reset_code_hash: { type: String, default: "" },
+        password_reset_code_expires_at: { type: Date, default: null },
+        password_reset_code_attempts: { type: Number, default: 0 },
+        password_reset_requested_at: { type: Date, default: null },
         created_at: { type: Date, default: Date.now }
     }));
 export { User };

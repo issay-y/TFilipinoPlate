@@ -41,6 +41,36 @@ async function login(email, password) {
     return data;
 }
 
+async function requestPasswordResetCode(email) {
+    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.message || "Could not send reset code.");
+    }
+
+    return data;
+}
+
+async function resetPasswordWithCode(email, code, newPassword) {
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code, newPassword })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.message || "Could not reset password.");
+    }
+
+    return data;
+}
+
 async function fetchRecipes(query = "", limit = 20, page = 1) {
     const params = new URLSearchParams();
     if (query.trim()) {
@@ -929,14 +959,17 @@ function initRecipeSearch() {
 function setAuthMessage(message, isError = true) {
     const loginModal = document.getElementById("loginModal");
     const signupModal = document.getElementById("signupModal");
+    const forgotModal = document.getElementById("forgotModal");
 
     let authMessage = null;
     if (loginModal && loginModal.style.display === "flex") {
         authMessage = document.getElementById("login-message");
     } else if (signupModal && signupModal.style.display === "flex") {
         authMessage = document.getElementById("signup-message");
+    } else if (forgotModal && forgotModal.style.display === "flex") {
+        authMessage = document.getElementById("forgot-message");
     } else {
-        authMessage = document.getElementById("login-message") || document.getElementById("signup-message") || document.getElementById("auth-message");
+        authMessage = document.getElementById("login-message") || document.getElementById("signup-message") || document.getElementById("forgot-message") || document.getElementById("auth-message");
     }
 
     if (!authMessage) {
@@ -948,13 +981,26 @@ function setAuthMessage(message, isError = true) {
 }
 
 function clearAuthMessage() {
-    const ids = ["login-message", "signup-message", "auth-message"];
+    const ids = ["login-message", "signup-message", "forgot-message", "auth-message"];
     ids.forEach((id) => {
         const element = document.getElementById(id);
         if (element) {
             element.textContent = "";
         }
     });
+}
+
+function validateResetCodeInput(code, password) {
+    const sanitizedCode = String(code || "").trim();
+    if (!/^\d{6}$/.test(sanitizedCode)) {
+        return "Please enter the 6-digit reset code sent to your email.";
+    }
+
+    if (password.length < 6 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
+        return "Password must be at least 6 characters and include an uppercase letter, a lowercase letter, and a number.";
+    }
+
+    return "";
 }
 
 function isValidEmail(email) {
@@ -1118,6 +1164,86 @@ async function handleSignupSubmit(event) {
     }
 }
 
+async function handleForgotPasswordSubmit(event) {
+    event.preventDefault();
+    const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.disabled = true;
+    }
+
+    const emailInput = document.getElementById("forgot-email");
+    const email = emailInput ? emailInput.value.trim() : "";
+
+    if (!isValidEmail(email)) {
+        setAuthMessage("Please check your email address and try again.");
+        if (submitButton) {
+            submitButton.disabled = false;
+        }
+        return;
+    }
+
+    setAuthMessage("Sending reset code...", false);
+
+    try {
+        const data = await requestPasswordResetCode(email);
+        setAuthMessage(data.message || "If an account exists, a reset code has been sent.", false);
+    } catch (error) {
+        setAuthMessage(toFriendlyAuthError(error, "Could not send reset code right now. Please try again."));
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+        }
+    }
+}
+
+async function handleResetPasswordSubmit(event) {
+    event.preventDefault();
+    const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.disabled = true;
+    }
+
+    const emailInput = document.getElementById("forgot-email");
+    const codeInput = document.getElementById("reset-code");
+    const passwordInput = document.getElementById("reset-new-password");
+    const email = emailInput ? emailInput.value.trim() : "";
+    const code = codeInput ? codeInput.value.trim() : "";
+    const newPassword = passwordInput ? passwordInput.value : "";
+
+    if (!isValidEmail(email)) {
+        setAuthMessage("Please enter the same email used to request the reset code.");
+        if (submitButton) {
+            submitButton.disabled = false;
+        }
+        return;
+    }
+
+    const validationError = validateResetCodeInput(code, newPassword);
+    if (validationError) {
+        setAuthMessage(validationError);
+        if (submitButton) {
+            submitButton.disabled = false;
+        }
+        return;
+    }
+
+    setAuthMessage("Resetting your password...", false);
+
+    try {
+        const data = await resetPasswordWithCode(email, code, newPassword);
+        setAuthMessage(data.message || "Password reset successful. You can now log in.", false);
+        setTimeout(() => {
+            switchModal("forgotModal", "loginModal");
+        }, 1200);
+    } catch (error) {
+        setAuthMessage(toFriendlyAuthError(error, "Could not reset password right now. Please try again."));
+    } finally {
+        if (submitButton) {
+            submitButton.disabled = false;
+        }
+    }
+}
+
 function openModal(id) {
     clearAuthMessage();
     const element = document.getElementById(id);
@@ -1150,6 +1276,8 @@ window.onclick = function(event) {
 function initGuestAuth() {
     const loginForm = document.getElementById("login-form");
     const signupForm = document.getElementById("signup-form");
+    const forgotForm = document.getElementById("forgot-form");
+    const resetForm = document.getElementById("reset-form");
 
     if (loginForm) {
         loginForm.addEventListener("submit", handleLoginSubmit);
@@ -1157,6 +1285,14 @@ function initGuestAuth() {
 
     if (signupForm) {
         signupForm.addEventListener("submit", handleSignupSubmit);
+    }
+
+    if (forgotForm) {
+        forgotForm.addEventListener("submit", handleForgotPasswordSubmit);
+    }
+
+    if (resetForm) {
+        resetForm.addEventListener("submit", handleResetPasswordSubmit);
     }
 
     initPasswordToggle();

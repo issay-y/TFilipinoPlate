@@ -1,16 +1,21 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { body } from "express-validator";
 import { User } from "../models/user.models.js";
 import { verifyToken } from "../middleware/auth.middleware.js";
 import { validateRequest } from "../middleware/requestValidation.middleware.js";
+import { sendPasswordChangedEmail, sendPasswordResetCodeEmail } from "../services/email.services.js";
 
 const router = express.Router();
 
 const LOGIN_RATE_LIMIT_MAX_ATTEMPTS = 5;
 const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const loginAttemptsByIdentity = new Map();
+const RESET_CODE_TTL_MS = 10 * 60 * 1000;
+const RESET_CODE_MAX_ATTEMPTS = 5;
+const RESET_CODE_COOLDOWN_MS = 60 * 1000;
 
 function getAttemptKey(email) {
   return String(email || "").trim().toLowerCase();
@@ -54,6 +59,21 @@ function getRetryAfterSeconds(key) {
 function isValidEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+}
+
+function isStrongPassword(password) {
+  return String(password || "").length >= 6
+    && /[A-Z]/.test(password)
+    && /[a-z]/.test(password)
+    && /\d/.test(password);
+}
+
+function generateResetCode() {
+  return String(crypto.randomInt(100000, 1000000));
+}
+
+function hashResetCode(code) {
+  return crypto.createHash("sha256").update(String(code || "")).digest("hex");
 }
 
 // Create a new user account.
@@ -218,5 +238,127 @@ router.get("/me", verifyToken, (req, res) => {
 
   return res.json({ user });
 });
+
+router.post(
+  "/forgot-password",
+  validateRequest([
+    body("email").trim().notEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format")
+  ]),
+  async (req, res) => {
+    const genericMessage = "If an account with that email exists, we sent a password reset code.";
+    const email = String(req.body?.email || "").trim().toLowerCase();
+
+    try {
+      const user = await User.findOne({ email });
+      if (!user || user.status !== "active") {
+        return res.json({ message: genericMessage });
+      }
+
+      const now = Date.now();
+      const lastRequestedAt = user.password_reset_requested_at ? new Date(user.password_reset_requested_at).getTime() : 0;
+      if (lastRequestedAt && (now - lastRequestedAt) < RESET_CODE_COOLDOWN_MS) {
+        return res.json({ message: genericMessage });
+      }
+
+      const code = generateResetCode();
+      user.password_reset_code_hash = hashResetCode(code);
+      user.password_reset_code_expires_at = new Date(now + RESET_CODE_TTL_MS);
+      user.password_reset_code_attempts = 0;
+      user.password_reset_requested_at = new Date(now);
+      await user.save();
+
+      await sendPasswordResetCodeEmail({
+        userEmail: user.email,
+        userName: user.full_name || user.username,
+        code,
+        expiresInMinutes: Math.floor(RESET_CODE_TTL_MS / 60000)
+      });
+
+      return res.json({ message: genericMessage });
+    } catch (error) {
+      console.error("Forgot password error:", error.message);
+      return res.json({ message: genericMessage });
+    }
+  }
+);
+
+router.post(
+  "/reset-password",
+  validateRequest([
+    body("email").trim().notEmpty().withMessage("Email is required").isEmail().withMessage("Invalid email format"),
+    body("code").trim().isLength({ min: 6, max: 6 }).withMessage("Code must be 6 digits"),
+    body("newPassword")
+      .isLength({ min: 6 })
+      .withMessage("Password must be at least 6 characters long")
+      .matches(/[A-Z]/)
+      .withMessage("Password must contain an uppercase letter")
+      .matches(/[a-z]/)
+      .withMessage("Password must contain a lowercase letter")
+      .matches(/\d/)
+      .withMessage("Password must contain a number")
+  ]),
+  async (req, res) => {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const code = String(req.body?.code || "").trim();
+    const newPassword = String(req.body?.newPassword || "");
+
+    if (!isStrongPassword(newPassword)) {
+      return res.status(400).json({
+        message: "Password must be at least 6 characters and include an uppercase letter, a lowercase letter, and a number."
+      });
+    }
+
+    try {
+      const user = await User.findOne({ email });
+      if (!user) {
+        return res.status(400).json({ message: "Invalid or expired reset code." });
+      }
+
+      if (!user.password_reset_code_hash || !user.password_reset_code_expires_at) {
+        return res.status(400).json({ message: "Invalid or expired reset code." });
+      }
+
+      const expiresAt = new Date(user.password_reset_code_expires_at).getTime();
+      if (!expiresAt || Date.now() > expiresAt) {
+        user.password_reset_code_hash = "";
+        user.password_reset_code_expires_at = null;
+        user.password_reset_code_attempts = 0;
+        await user.save();
+        return res.status(400).json({ message: "Reset code expired. Please request a new one." });
+      }
+
+      const attempts = Number.parseInt(user.password_reset_code_attempts || 0, 10);
+      if (attempts >= RESET_CODE_MAX_ATTEMPTS) {
+        return res.status(429).json({ message: "Too many incorrect attempts. Please request a new reset code." });
+      }
+
+      const inputHash = hashResetCode(code);
+      if (inputHash !== user.password_reset_code_hash) {
+        user.password_reset_code_attempts = attempts + 1;
+        await user.save();
+        return res.status(400).json({ message: "Invalid or expired reset code." });
+      }
+
+      user.password = await bcrypt.hash(newPassword, 10);
+      user.password_reset_code_hash = "";
+      user.password_reset_code_expires_at = null;
+      user.password_reset_code_attempts = 0;
+      user.password_reset_requested_at = null;
+      await user.save();
+
+      await sendPasswordChangedEmail({
+        userEmail: user.email,
+        userName: user.full_name || user.username,
+        changedAt: new Date(),
+        actorEmail: "self-service password reset"
+      });
+
+      return res.json({ message: "Password reset successful. You can now log in with your new password." });
+    } catch (error) {
+      console.error("Reset password error:", error.message);
+      return res.status(500).json({ message: "Could not reset password right now. Please try again." });
+    }
+  }
+);
 
 export default router;
