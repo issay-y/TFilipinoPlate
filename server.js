@@ -13,6 +13,7 @@ import cors from "cors";
 import express from "express";
 import dotenv from "dotenv";
 import path from "path";
+import dns from "node:dns";
 // For root page wire with landing page
 import { fileURLToPath } from "url";
 // Use `net stop MongoDB` to stop the MongoDB service.
@@ -24,6 +25,9 @@ import { fileURLToPath } from "url";
 //to cache something in git: git rm --cached "the file name"
 // Load values from the .env file.
 dotenv.config();
+
+// Prefer IPv4 to avoid IPv6-only route failures (ENETUNREACH) on some cloud hosts.
+dns.setDefaultResultOrder("ipv4first");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
