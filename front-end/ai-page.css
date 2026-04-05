@@ -274,13 +274,6 @@ input:checked + .slider:before {
     text-align: center;
 }
 
-.footer {
-    background: #3c2415;
-    color: #ddd9ce;
-    padding: 40px 20px;
-    text-align: center;
-}
-
 .footer-brand {
     font-weight: 800;
     font-family: 'Poppins';
