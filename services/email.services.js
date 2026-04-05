@@ -1,5 +1,26 @@
 import nodemailer from "nodemailer";
 
+function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
+}
+
+function maskEmail(value) {
+    const email = String(value || "").trim();
+    if (!isValidEmail(email)) {
+        return "<invalid-email>";
+    }
+
+    const atIndex = email.indexOf("@");
+    const local = email.slice(0, atIndex);
+    const domain = email.slice(atIndex + 1);
+
+    const maskedLocal = local.length <= 2
+        ? `${local.charAt(0) || "*"}*`
+        : `${local.slice(0, 2)}***`;
+
+    return `${maskedLocal}@${domain}`;
+}
+
 function buildTransport() {
     const smtpUser = process.env.SMTP_USER;
     const smtpPass = process.env.SMTP_PASS;
@@ -14,6 +35,9 @@ function buildTransport() {
         host: smtpHost,
         port: smtpPort,
         secure: smtpPort === 465,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
         auth: {
             user: smtpUser,
             pass: smtpPass
@@ -22,6 +46,13 @@ function buildTransport() {
 }
 
 export async function sendPasswordChangedEmail({ userEmail, userName, changedAt, actorEmail }) {
+    const recipient = String(userEmail || "").trim();
+    const maskedRecipient = maskEmail(recipient);
+    if (!isValidEmail(recipient)) {
+        console.warn(`Email service: Skipping password-change email due to invalid recipient '${maskedRecipient}'`);
+        return { sent: false, reason: "Invalid recipient email" };
+    }
+
     const transporter = buildTransport();
     if (!transporter) {
         console.warn("Email service: SMTP not configured - no SMTP_USER or SMTP_PASS in .env");
@@ -35,7 +66,7 @@ export async function sendPasswordChangedEmail({ userEmail, userName, changedAt,
     const changedTime = (changedAt instanceof Date ? changedAt : new Date(changedAt || Date.now())).toLocaleString();
     const changedBy = String(actorEmail || "an administrator").trim();
 
-    console.log(`Email service: Attempting to send password change email to ${userEmail}`);
+    console.log(`Email service: Attempting to send password change email to ${maskedRecipient}`);
 
     const text = [
         `Dear ${safeName},`,
@@ -57,20 +88,27 @@ export async function sendPasswordChangedEmail({ userEmail, userName, changedAt,
     try {
         await transporter.sendMail({
             from: `"${displayName}" <${fromAddress}>`,
-            to: userEmail,
+            to: recipient,
             subject: "Is this you? Password changed",
             text,
             html
         });
-        console.log(`Email service: Successfully sent password change email to ${userEmail}`);
+        console.log(`Email service: Successfully sent password change email to ${maskedRecipient}`);
         return { sent: true };
     } catch (error) {
-        console.error(`Email service error: Failed to send to ${userEmail} - ${error.message}`);
+        console.error(`Email service error: Failed to send to ${maskedRecipient} - ${error.message}`);
         return { sent: false, reason: error.message };
     }
 }
 
 export async function sendPasswordResetCodeEmail({ userEmail, userName, code, expiresInMinutes }) {
+    const recipient = String(userEmail || "").trim();
+    const maskedRecipient = maskEmail(recipient);
+    if (!isValidEmail(recipient)) {
+        console.warn(`Email service: Skipping reset-code email due to invalid recipient '${maskedRecipient}'`);
+        return { sent: false, reason: "Invalid recipient email" };
+    }
+
     const transporter = buildTransport();
     if (!transporter) {
         console.warn("Email service: SMTP not configured - no SMTP_USER or SMTP_PASS in .env");
@@ -109,16 +147,18 @@ export async function sendPasswordResetCodeEmail({ userEmail, userName, code, ex
     `;
 
     try {
+        console.log(`Email service: Attempting to send reset code email to ${maskedRecipient}`);
         await transporter.sendMail({
             from: `"${displayName}" <${fromAddress}>`,
-            to: userEmail,
+            to: recipient,
             subject: "Your password reset code",
             text,
             html
         });
+        console.log(`Email service: Successfully sent reset code email to ${maskedRecipient}`);
         return { sent: true };
     } catch (error) {
-        console.error(`Email service error: Failed reset code email to ${userEmail} - ${error.message}`);
+        console.error(`Email service error: Failed reset code email to ${maskedRecipient} - ${error.message}`);
         return { sent: false, reason: error.message };
     }
 }
