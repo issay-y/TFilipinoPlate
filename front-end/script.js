@@ -131,38 +131,31 @@ function getForgotModalElements() {
     return {
         modal: document.getElementById("forgotModal"),
         emailInput: document.getElementById("forgot-email"),
-        resetPanel: document.getElementById("forgot-reset-panel"),
         forgotForm: document.getElementById("forgot-form"),
+        resetPanel: document.getElementById("forgot-reset-panel"),
         resetForm: document.getElementById("reset-form"),
+        resetButton: document.getElementById("reset-password-button"),
         codeInput: document.getElementById("reset-code"),
         passwordInput: document.getElementById("reset-new-password")
     };
 }
 
 function resetForgotPasswordModalState() {
-    const { modal, emailInput, resetPanel, forgotForm, resetForm, codeInput, passwordInput } = getForgotModalElements();
+    const { emailInput, resetForm, resetButton, codeInput, passwordInput } = getForgotModalElements();
 
     forgotPasswordEmail = "";
-
-    if (modal) {
-        modal.classList.remove("forgot-reset-active");
-    }
 
     if (emailInput) {
         emailInput.readOnly = false;
         emailInput.value = "";
     }
 
-    if (forgotForm) {
-        forgotForm.classList.remove("hidden");
-    }
-
-    if (resetPanel) {
-        resetPanel.classList.add("hidden");
-    }
-
     if (resetForm) {
         resetForm.reset();
+    }
+
+    if (resetButton) {
+        resetButton.disabled = true;
     }
 
     if (codeInput) {
@@ -175,21 +168,13 @@ function resetForgotPasswordModalState() {
 }
 
 function showForgotResetStep(email) {
-    const { modal, emailInput, resetPanel, forgotForm, codeInput, passwordInput } = getForgotModalElements();
+    const { emailInput, resetButton, codeInput, passwordInput } = getForgotModalElements();
 
     forgotPasswordEmail = String(email || "").trim();
-
-    if (modal) {
-        modal.classList.add("forgot-reset-active");
-    }
 
     if (emailInput) {
         emailInput.value = forgotPasswordEmail;
         emailInput.readOnly = true;
-    }
-
-    if (forgotForm) {
-        forgotForm.classList.add("hidden");
     }
 
     if (codeInput) {
@@ -200,8 +185,8 @@ function showForgotResetStep(email) {
         passwordInput.value = "";
     }
 
-    if (resetPanel) {
-        resetPanel.classList.remove("hidden");
+    if (resetButton) {
+        resetButton.disabled = false;
     }
 
     if (codeInput) {
@@ -212,22 +197,14 @@ function showForgotResetStep(email) {
 }
 
 function returnToForgotEmailStep() {
-    const { modal, forgotForm, resetPanel, emailInput, resetForm } = getForgotModalElements();
-
-    if (resetPanel) {
-        resetPanel.classList.add("hidden");
-    }
-
-    if (modal) {
-        modal.classList.remove("forgot-reset-active");
-    }
+    const { emailInput, resetForm, resetButton } = getForgotModalElements();
 
     if (resetForm) {
         resetForm.reset();
     }
 
-    if (forgotForm) {
-        forgotForm.classList.remove("hidden");
+    if (resetButton) {
+        resetButton.disabled = true;
     }
 
     if (emailInput) {

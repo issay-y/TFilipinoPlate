@@ -314,16 +314,14 @@ body {
 #forgotModal.forgot-reset-active #forgot-reset-panel {
     display: block !important;
 }
-
-.forgot-reset-panel {
-    margin-top: 18px;
-    padding-top: 18px;
-    border-top: 1px solid rgba(60, 36, 21, 0.2);
-    text-align: left;
 }
 
 .forgot-step-text {
     margin-bottom: 14px;
+    .auth-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
     font-size: 0.9rem;
     line-height: 1.45;
     color: #3c2415;
